@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
+import CodeEditor from './CodeEditor';
 
 function FileEditor({ filename, onSave }) {
   const [content, setContent] = useState('');
@@ -78,11 +79,10 @@ function FileEditor({ filename, onSave }) {
           </button>
         </div>
       </div>
-      <textarea
+      <CodeEditor
         value={content}
-        onChange={(e) => setContent(e.target.value)}
-        spellCheck="false"
-        className="code-editor"
+        onChange={setContent}
+        disabled={loading}
       />
     </div>
   );

@@ -433,13 +433,19 @@ func parseCashflows(path string) ([]Cashflow, error) {
 		if i == 0 {
 			continue
 		}
-		if len(row) < 8 {
+		if len(row) < 18 {
 			continue
 		}
+		// CSV columns: TradeId, Type, CashflowNo, LegNo, PayDate, FlowType, Amount, Currency, ...
+		legNo := row[3]
+		legType := "Fixed"
+		if legNo == "1" {
+			legType = "Floating"
+		}
 		flows = append(flows, Cashflow{
-			Date:     row[1],
-			Amount:   parseFloat(row[3]),
-			Leg:      row[5],
+			Date:     row[4],
+			Amount:   parseFloat(row[6]),
+			Leg:      legType,
 			Currency: row[7],
 			TradeId:  row[0],
 		})
