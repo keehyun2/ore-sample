@@ -682,3 +682,215 @@ td.negative {
   display: block;
   margin-bottom: 0.5rem;
 }
+
+/* FRED Rates */
+.fred-rates-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.fred-header {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.fred-header h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+.fred-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.fred-error {
+  margin-bottom: 1.5rem;
+}
+
+.error-help {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #fecaca;
+  font-size: 0.875rem;
+}
+
+.error-help code {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.125rem 0.25rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.error-help a {
+  color: #991b1b;
+  text-decoration: underline;
+}
+
+.fred-controls {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.series-selector label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.series-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.series-checkbox {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.series-checkbox:hover {
+  background: var(--bg-color);
+}
+
+.series-checkbox input {
+  margin-right: 0.5rem;
+  cursor: pointer;
+}
+
+.series-checkbox span {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.fred-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.fred-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fred-fetch {
+  background: var(--primary-color);
+  color: white;
+}
+
+.fred-fetch:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.fred-update {
+  background: var(--success-color);
+  color: white;
+}
+
+.fred-update:hover:not(:disabled) {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+.fred-button:disabled {
+  background: var(--text-secondary);
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.5;
+}
+
+.rates-table-container {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.rates-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rates-table thead {
+  background: var(--bg-color);
+}
+
+.rates-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.rates-table td {
+  padding: 0.875rem 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.rates-table code {
+  background: var(--bg-color);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+
+.rate-value {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.fred-loading {
+  padding: 2rem;
+}
+
+.no-data {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-secondary);
+}
+
+.no-data p {
+  margin: 0.5rem 0;
+}
+
+.fred-footer {
+  text-align: center;
+  padding: 1rem;
+}
+
+.fred-info {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.fred-info a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.fred-info a:hover {
+  text-decoration: underline;
+}

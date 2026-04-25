@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Tabs, Tab } from './components/Tabs';
 import FileSelector from './components/InputEditor/FileSelector';
 import FileEditor from './components/InputEditor/FileEditor';
+import FREDRates from './components/InputEditor/FREDRates';
 import NPVDisplay from './components/Output/NPVDisplay';
 import CashflowsTable from './components/Output/CashflowsTable';
 import CurvesChart from './components/Output/CurvesChart';
@@ -108,6 +109,10 @@ function App() {
               {running && <p className="running-text">Executing ORE... this may take a moment.</p>}
             </div>
           </div>
+        </Tab>
+
+        <Tab label="FRED Rates">
+          <FREDRates />
         </Tab>
 
         <Tab label="Output Results">

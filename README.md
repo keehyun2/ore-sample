@@ -8,6 +8,7 @@ Web application for executing ORE (Open Source Risk Engine) Interest Rate Swap v
 2. **Output Results Display** - View NPV, cashflows, and yield curves
 3. **ORE Error Logs** - View ORE execution logs when errors occur
 4. **Working Directory** - Original files are preserved; edits happen in a working copy
+5. **FRED Integration** - Fetch live interest rate data from Federal Reserve Economic Data
 
 ## Prerequisites
 
@@ -93,6 +94,7 @@ Frontend runs on `http://localhost:5173`
 | `EXAMPLE_DIR` | Yes | - | Full path to TA002_IR_Swap example directory |
 | `WORK_DIR` | No | `./working` | Working directory for editable files |
 | `PORT` | No | `8080` | Server port |
+| `FRED_API_KEY` | No | - | API key for fetching interest rate data from FRED |
 
 ### Frontend (.env)
 
@@ -128,6 +130,8 @@ ore-sample/
 - `POST /api/run` - Execute ORE valuation
 - `GET /api/results` - Get last cached results
 - `GET /api/config` - Get current configuration
+- `GET /api/fred/rates` - Get interest rate data from FRED
+- `POST /api/fred/update` - Update market.txt with FRED data
 
 ## Editable Input Files
 
@@ -152,3 +156,38 @@ ore-sample/
 - As-of Date: 2016-02-05
 
 **Expected NPV:** 3,257,771.39 EUR
+
+## FRED Integration
+
+The application includes integration with [FRED (Federal Reserve Economic Data)](https://fred.stlouisfed.org/) for fetching live interest rate data.
+
+### Getting FRED API Key
+
+1. Visit [FRED API Key Request](https://fred.stlouisfed.org/docs/api/api_key.html)
+2. Request a free API key
+3. Add the key to your `backend/.env` file:
+
+```bash
+FRED_API_KEY=your_api_key_here
+```
+
+### Using FRED Data
+
+1. Navigate to the **FRED Rates** tab in the application
+2. Select the interest rate series you want to fetch (e.g., 10-Year Treasury, Fed Funds Rate)
+3. Click **Fetch Rates** to retrieve current data
+4. Click **Update market.txt** to apply the rates to your market data file
+
+### Available Rate Series
+
+| Series ID | Description |
+|-----------|-------------|
+| `DGS10` | 10-Year Treasury Constant Maturity Rate |
+| `DGS2` | 2-Year Treasury Constant Maturity Rate |
+| `DGS5` | 5-Year Treasury Constant Maturity Rate |
+| `DGS30` | 30-Year Treasury Constant Maturity Rate |
+| `DGS3MO` | 3-Month Treasury Constant Maturity Rate |
+| `DGS1MO` | 1-Month Treasury Constant Maturity Rate |
+| `FEDFUNDS` | Federal Funds Effective Rate |
+| `EURIBOR6M` | 6-Month EURIBOR Rate |
+| `SOFR` | Secured Overnight Financing Rate |

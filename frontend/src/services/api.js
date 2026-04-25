@@ -40,4 +40,25 @@ export const api = {
     const response = await axios.get(`${API_BASE}/config`);
     return response.data;
   },
+
+  getFREDRates: async (seriesIds) => {
+    if (!seriesIds || seriesIds.length === 0) {
+      const response = await axios.get(`${API_BASE}/fred/rates`);
+      return response.data;
+    }
+
+    // Build URL with multiple series parameters
+    const params = new URLSearchParams();
+    seriesIds.forEach(id => params.append('series', id));
+
+    const response = await axios.get(`${API_BASE}/fred/rates?${params.toString()}`);
+    return response.data;
+  },
+
+  updateMarketFromFRED: async (seriesIds) => {
+    const response = await axios.post(`${API_BASE}/fred/update`, {
+      seriesIds,
+    });
+    return response.data;
+  },
 };

@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -22,6 +23,7 @@ var (
 	outputDir  string
 	workDir    string
 	serverPort string
+	fredApiKey string
 )
 
 var lastRunResult *RunResult
@@ -35,6 +37,7 @@ func init() {
 	outputDir = "Output"
 	workDir = getEnv("WORK_DIR", "./working")
 	serverPort = getEnv("PORT", "8080")
+	fredApiKey = getEnv("FRED_API_KEY", "")
 }
 
 func loadEnvFile() {
@@ -124,6 +127,8 @@ func main() {
 	mux.HandleFunc("/api/run", handleRun)
 	mux.HandleFunc("/api/results", handleGetResults)
 	mux.HandleFunc("/api/config", handleGetConfig)
+	mux.HandleFunc("/api/fred/rates", handleGetFREDRates)
+	mux.HandleFunc("/api/fred/update", handleUpdateMarketFromFRED)
 
 	handler := corsMiddleware(mux)
 
@@ -335,13 +340,20 @@ func runORE() *RunResult {
 	err = cmd.Run()
 	duration := time.Since(start)
 
-	logs := fmt.Sprintf("Execution time: %v\n\nSTDOUT:\n%s\n\nSTDERR:\n%s",
-		duration, stdout.String(), stderr.String())
+	// Try to read ORE log.txt if it exists
+	var oreLogs string
+	logPath := filepath.Join(tempOutputDir, "log.txt")
+	if logContent, err := os.ReadFile(logPath); err == nil {
+		oreLogs = string(logContent)
+	} else {
+		oreLogs = fmt.Sprintf("Execution time: %v\n\nSTDOUT:\n%s\n\nSTDERR:\n%s",
+			duration, stdout.String(), stderr.String())
+	}
 
 	if err != nil {
 		return &RunResult{
 			Success: false,
-			Logs:    logs,
+			Logs:    oreLogs,
 			Error:   fmt.Sprintf("ORE execution failed: %v", err),
 		}
 	}
@@ -350,7 +362,7 @@ func runORE() *RunResult {
 	if err != nil {
 		return &RunResult{
 			Success: false,
-			Logs:    logs,
+			Logs:    oreLogs,
 			Error:   fmt.Sprintf("Failed to parse results: %v", err),
 		}
 	}
@@ -358,7 +370,7 @@ func runORE() *RunResult {
 	return &RunResult{
 		Success: true,
 		Results: results,
-		Logs:    logs,
+		Logs:    oreLogs,
 	}
 }
 
@@ -523,4 +535,470 @@ func parseFloat(s string) float64 {
 	var f float64
 	fmt.Sscanf(s, "%f", &f)
 	return f
+}
+
+// FRED API Types
+
+type FREDObservation struct {
+	Date     string `json:"date"`
+	Value    string `json:"value"`
+	Realtime string `json:"realtime_start,omitempty"`
+}
+
+type FREDSeriesResponse struct {
+	SeriesID string           `json:"series_id"`
+	SeriesName string         `json:"series_name,omitempty"`
+	Observations []FREDObservation `json:"observations"`
+}
+
+type FREDRate struct {
+	SeriesID   string  `json:"seriesId"`
+	SeriesName string  `json:"seriesName"`
+	Value      float64 `json:"value"`
+	Date       string  `json:"date"`
+}
+
+type FREDUpdateRequest struct {
+	SeriesIDs []string `json:"seriesIds"`
+}
+
+// FRED API Handlers
+
+func handleGetFREDRates(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if fredApiKey == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "FRED_API_KEY not configured. Please add FRED_API_KEY to your .env file.",
+			"instructions": "Get your API key from https://fred.stlouisfed.org/docs/api/api_key.html",
+		})
+		return
+	}
+
+	seriesIDs := r.URL.Query()["series"]
+	if len(seriesIDs) == 0 {
+		seriesIDs = []string{"DGS10", "DGS2", "DGS3MO", "FEDFUNDS"}
+	}
+
+	rates, err := fetchFREDRates(seriesIDs)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(rates)
+}
+
+func handleUpdateMarketFromFRED(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if fredApiKey == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "FRED_API_KEY not configured",
+			"instructions": "Add FRED_API_KEY to your .env file",
+		})
+		return
+	}
+
+	var req FREDUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if len(req.SeriesIDs) == 0 {
+		req.SeriesIDs = []string{"DGS10", "DGS2", "DGS3MO", "FEDFUNDS"}
+	}
+
+	// Get as-of date from ore.xml
+	asofDate, err := getAsofDateFromORE()
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("Failed to read ore.xml: %v", err)})
+		return
+	}
+
+	rates, err := fetchFREDRates(req.SeriesIDs)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	marketContent, err := generateMarketFileFromRates(rates, asofDate)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	marketPath := filepath.Join(workDir, inputDir, "market.txt")
+	if err := os.WriteFile(marketPath, []byte(marketContent), 0644); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	// Update curveconfig.xml with available quotes
+	curveConfigContent, err := updateCurveConfig(rates)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("Failed to update curveconfig.xml: %v", err)})
+		return
+	}
+
+	curveConfigPath := filepath.Join(workDir, inputDir, "curveconfig.xml")
+	if err := os.WriteFile(curveConfigPath, []byte(curveConfigContent), 0644); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status": "ok",
+		"message": "market.txt and curveconfig.xml updated with FRED data",
+		"rates": rates,
+		"asofDate": asofDate,
+		"marketContent": marketContent,
+		"curveConfigContent": curveConfigContent,
+	})
+}
+
+func fetchFREDRates(seriesIDs []string) ([]FREDRate, error) {
+	var rates []FREDRate
+	client := &http.Client{Timeout: 30 * time.Second}
+
+	for _, seriesID := range seriesIDs {
+		url := fmt.Sprintf("https://api.stlouisfed.org/fred/series/observations?series_id=%s&api_key=%s&file_type=json&limit=1&sort_order=desc",
+			seriesID, fredApiKey)
+
+		resp, err := client.Get(url)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch %s: %w", seriesID, err)
+		}
+		defer resp.Body.Close()
+
+		var data FREDSeriesResponse
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			return nil, fmt.Errorf("failed to decode %s response: %w", seriesID, err)
+		}
+
+		if len(data.Observations) == 0 {
+			continue
+		}
+
+		obs := data.Observations[0]
+		if obs.Value == "." {
+			continue
+		}
+
+		var value float64
+		fmt.Sscanf(obs.Value, "%f", &value)
+
+		rates = append(rates, FREDRate{
+			SeriesID:   seriesID,
+			SeriesName: getSeriesName(seriesID),
+			Value:      value,
+			Date:       obs.Date,
+		})
+	}
+
+	return rates, nil
+}
+
+func getSeriesName(seriesID string) string {
+	names := map[string]string{
+		"DGS10":      "10-Year Treasury Constant Maturity Rate",
+		"DGS2":       "2-Year Treasury Constant Maturity Rate",
+		"DGS3MO":     "3-Month Treasury Constant Maturity Rate",
+		"DGS1MO":     "1-Month Treasury Constant Maturity Rate",
+		"DGS5":       "5-Year Treasury Constant Maturity Rate",
+		"DGS7":       "7-Year Treasury Constant Maturity Rate",
+		"DGS20":      "20-Year Treasury Constant Maturity Rate",
+		"DGS30":      "30-Year Treasury Constant Maturity Rate",
+		"FEDFUNDS":   "Federal Funds Effective Rate",
+		"EURIBOR6M":  "6-Month EURIBOR Rate",
+		"USD6MTD156N": "6-Month USD LIBOR",
+		"SOFR":       "Secured Overnight Financing Rate",
+	}
+	if name, ok := names[seriesID]; ok {
+		return name
+	}
+	return seriesID
+}
+
+func getAsofDateFromORE() (string, error) {
+	oreXmlPath := filepath.Join(workDir, inputDir, "ore.xml")
+	content, err := os.ReadFile(oreXmlPath)
+	if err != nil {
+		return "", err
+	}
+
+	// Parse XML to find asofDate parameter
+	re := regexp.MustCompile(`<Parameter name="asofDate">([^<]+)</Parameter>`)
+	matches := re.FindStringSubmatch(string(content))
+	if len(matches) < 2 {
+		return "", fmt.Errorf("asofDate not found in ore.xml")
+	}
+
+	dateStr := matches[1]
+	// Parse date and convert to ORE format (YYYYMMDD)
+	t, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		return "", fmt.Errorf("invalid asofDate format: %w", err)
+	}
+
+	return t.Format("20060102"), nil
+}
+
+func generateMarketFileFromRates(rates []FREDRate, asofDate string) (string, error) {
+	var builder strings.Builder
+	builder.WriteString("# Market data generated from FRED\n")
+	builder.WriteString(fmt.Sprintf("# Generated: %s\n\n", time.Now().Format("2006-01-02 15:04:05")))
+
+	today := asofDate
+
+	// Build rate maps for OIS and Swap
+	oisMap := make(map[string]float64)   // For EUR1D
+	swapMap := make(map[string]float64)  // For EUR6M
+
+	for _, rate := range rates {
+		mapping := getORETermMapping(rate.SeriesID)
+		if mapping.Code == "" {
+			continue
+		}
+		rateValue := rate.Value / 100.0
+
+		// OIS (EUR1D)
+		if mapping.OISCode != "" {
+			oisMap[mapping.OISCode] = rateValue
+		}
+
+		// Swap (EUR6M)
+		if mapping.SwapCode != "" {
+			swapMap[mapping.SwapCode] = rateValue
+		}
+	}
+
+	// Write EUR1D / OIS section (only available data)
+	builder.WriteString("#EUR1D\n")
+	builder.WriteString("#DEPOSIT\n")
+	if onRate, ok := oisMap["1D"]; ok {
+		builder.WriteString(fmt.Sprintf("%s MM/RATE/EUR/0D/1D %.4f\n", today, onRate))
+	}
+	builder.WriteString("#OIS\n")
+
+	// Sort OIS tenors
+	oisTenors := []string{"1M", "3M", "2Y", "5Y", "7Y", "10Y", "20Y", "30Y"}
+	for _, tenor := range oisTenors {
+		if rate, ok := oisMap[tenor]; ok {
+			builder.WriteString(fmt.Sprintf("%s IR_SWAP/RATE/EUR/2D/1D/%s %.4f\n", today, tenor, rate))
+		}
+	}
+	builder.WriteString("\n")
+
+	// Write EUR6M / Swap section (only available data)
+	builder.WriteString("#EUR6M\n")
+	builder.WriteString("#DEPOSIT\n")
+	// Use shortest swap rate for 6M deposit
+	for _, tenor := range []string{"2Y", "5Y", "7Y", "10Y", "20Y", "30Y"} {
+		if rate, ok := swapMap[tenor]; ok {
+			builder.WriteString(fmt.Sprintf("%s MM/RATE/EUR/2D/6M %.4f\n", today, rate))
+			break
+		}
+	}
+	builder.WriteString("#SWAP\n")
+
+	// Sort Swap tenors
+	swapTenors := []string{"2Y", "5Y", "7Y", "10Y", "20Y", "30Y"}
+	for _, tenor := range swapTenors {
+		if rate, ok := swapMap[tenor]; ok {
+			builder.WriteString(fmt.Sprintf("%s IR_SWAP/RATE/EUR/2D/6M/%s %.4f\n", today, tenor, rate))
+		}
+	}
+
+	return builder.String(), nil
+}
+
+func getTermFromSeriesID(seriesID string) string {
+	terms := map[string]string{
+		"DGS1MO":   "1M",
+		"DGS3MO":   "3M",
+		"DGS2":     "2Y",
+		"DGS5":     "5Y",
+		"DGS7":     "7Y",
+		"DGS10":    "10Y",
+		"DGS20":    "20Y",
+		"DGS30":    "30Y",
+		"FEDFUNDS": "ON",
+	}
+	if term, ok := terms[seriesID]; ok {
+		return term
+	}
+	return ""
+}
+
+type ORETerm struct {
+	Code string
+	OISCode string
+	SwapCode string
+}
+
+func getORETermMapping(seriesID string) ORETerm {
+	mappings := map[string]ORETerm{
+		"DGS1MO":   {Code: "1M", OISCode: "1M", SwapCode: ""},
+		"DGS3MO":   {Code: "3M", OISCode: "3M", SwapCode: ""},
+		"FEDFUNDS": {Code: "ON", OISCode: "1D", SwapCode: ""},
+		"DGS2":     {Code: "2Y", OISCode: "2Y", SwapCode: "2Y"},
+		"DGS5":     {Code: "5Y", OISCode: "5Y", SwapCode: "5Y"},
+		"DGS7":     {Code: "7Y", OISCode: "7Y", SwapCode: "7Y"},
+		"DGS10":    {Code: "10Y", OISCode: "10Y", SwapCode: "10Y"},
+		"DGS20":    {Code: "20Y", OISCode: "20Y", SwapCode: "20Y"},
+		"DGS30":    {Code: "30Y", OISCode: "30Y", SwapCode: "30Y"},
+	}
+	if mapping, ok := mappings[seriesID]; ok {
+		return mapping
+	}
+	return ORETerm{Code: "", OISCode: "", SwapCode: ""}
+}
+
+func updateCurveConfig(rates []FREDRate) (string, error) {
+	var builder strings.Builder
+	builder.WriteString(`<?xml version="1.0" encoding="utf-8"?>
+<!-- CurveConfiguration generated from FRED data -->
+`)
+	builder.WriteString(fmt.Sprintf("<!-- Generated: %s -->\n", time.Now().Format("2006-01-02 15:04:05")))
+	builder.WriteString(`
+<CurveConfiguration>
+  <YieldCurves>
+`)
+
+	// Collect available OIS and Swap codes
+	var oisCodes []string
+	var swapCodes []string
+
+	for _, rate := range rates {
+		mapping := getORETermMapping(rate.SeriesID)
+		if mapping.OISCode != "" {
+			oisCodes = append(oisCodes, mapping.OISCode)
+		}
+		if mapping.SwapCode != "" {
+			swapCodes = append(swapCodes, mapping.SwapCode)
+		}
+	}
+
+	// Write EUR1D curve
+	builder.WriteString(`    <!-- EUR1D: EUR discount curve -->
+    <YieldCurve>
+      <CurveId>EUR1D</CurveId>
+      <CurveDescription>EUR discount curve from FRED data</CurveDescription>
+      <Currency>EUR</Currency>
+      <DiscountCurve>EUR1D</DiscountCurve>
+
+      <Segments>
+        <Simple>
+          <Type>Deposit</Type>
+          <Quotes>
+`)
+	// Add deposit if ON is available
+	for _, code := range oisCodes {
+		if code == "1D" {
+			builder.WriteString("            <Quote>MM/RATE/EUR/0D/1D</Quote>\n")
+			break
+		}
+	}
+	builder.WriteString(`          </Quotes>
+          <Conventions>EUR-EONIA-CONVENTIONS</Conventions>
+        </Simple>
+
+        <Simple>
+          <Type>OIS</Type>
+          <Quotes>
+`)
+	// Sort OIS codes: 1M, 3M, 2Y, 5Y, 7Y, 10Y, 20Y, 30Y
+	oisOrder := []string{"1M", "3M", "2Y", "5Y", "7Y", "10Y", "20Y", "30Y"}
+	for _, code := range oisOrder {
+		for _, c := range oisCodes {
+			if c == code {
+				builder.WriteString(fmt.Sprintf("            <Quote>IR_SWAP/RATE/EUR/2D/1D/%s</Quote>\n", code))
+				break
+			}
+		}
+	}
+	builder.WriteString(`          </Quotes>
+          <Conventions>EUR-OIS-CONVENTIONS</Conventions>
+        </Simple>
+      </Segments>
+
+      <InterpolationVariable>Discount</InterpolationVariable>
+      <InterpolationMethod>LogLinear</InterpolationMethod>
+      <YieldCurveDayCounter>A365</YieldCurveDayCounter>
+      <Tolerance>0.000000000001</Tolerance>
+    </YieldCurve>
+
+`)
+
+	// Write EUR6M curve
+	builder.WriteString(`    <!-- EUR6M: EUR 6M LIBOR forwarding curve -->
+    <YieldCurve>
+      <CurveId>EUR6M</CurveId>
+      <CurveDescription>EUR 6M forwarding curve from FRED data</CurveDescription>
+      <Currency>EUR</Currency>
+      <DiscountCurve>EUR1D</DiscountCurve>
+
+      <Segments>
+        <Simple>
+          <Type>Deposit</Type>
+          <Quotes>
+            <Quote>MM/RATE/EUR/2D/6M</Quote>
+          </Quotes>
+          <Conventions>EUR-EURIBOR-CONVENTIONS</Conventions>
+          <ProjectionCurve>EUR6M</ProjectionCurve>
+        </Simple>
+
+        <Simple>
+          <Type>Swap</Type>
+          <Quotes>
+`)
+	swapOrder := []string{"2Y", "5Y", "7Y", "10Y", "20Y", "30Y"}
+	for _, code := range swapOrder {
+		for _, c := range swapCodes {
+			if c == code {
+				builder.WriteString(fmt.Sprintf("            <Quote>IR_SWAP/RATE/EUR/2D/6M/%s</Quote>\n", code))
+				break
+			}
+		}
+	}
+	builder.WriteString(`          </Quotes>
+          <Conventions>EUR-6M-SWAP-CONVENTIONS</Conventions>
+          <ProjectionCurve>EUR6M</ProjectionCurve>
+        </Simple>
+      </Segments>
+    </YieldCurve>
+
+  </YieldCurves>
+</CurveConfiguration>
+`)
+
+	return builder.String(), nil
 }
