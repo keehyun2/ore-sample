@@ -3,9 +3,11 @@ import globals from 'globals'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import tailwind from 'eslint-plugin-tailwindcss'
 
 export default [
   { ignores: ['dist'] },
+  ...tailwind.configs['flat/recommended'],
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
@@ -33,6 +35,8 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+      'no-console': 'warn',
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     },
   },
 ]

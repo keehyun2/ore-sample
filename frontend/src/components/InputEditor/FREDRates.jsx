@@ -187,24 +187,24 @@ function FREDRates() {
           </div>
         </div>
 
-        <div className="flex gap-4 flex-wrap">
+        <div className="flex gap-3 flex-wrap">
           <button
             onClick={loadRates}
             disabled={loading || selectedSeries.length === 0}
-            className="py-3 px-6 border-none rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200 bg-primary text-white hover:bg-[#1d4ed8] disabled:bg-text-secondary disabled:cursor-not-allowed disabled:transform-none disabled:opacity-50 hover:not-disabled:-translate-y-0.5"
+            className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {loading ? 'Fetching...' : 'Fetch Rates'}
           </button>
           <button
             onClick={handleUpdateMarket}
             disabled={updating || rates.length === 0}
-            className="py-3 px-6 border-none rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200 bg-success-color text-white hover:bg-[#15803d] disabled:bg-text-secondary disabled:cursor-not-allowed disabled:transform-none disabled:opacity-50 hover:not-disabled:-translate-y-0.5"
+            className="px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {updating ? 'Updating...' : 'Update market.txt'}
           </button>
           <button
             onClick={() => setShowApiDetails(!showApiDetails)}
-            className="py-3 px-6 bg-bg-color text-text-secondary border border-border-color rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200 hover:bg-border-color hover:text-text-primary"
+            className="px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded text-sm font-medium hover:bg-gray-200"
           >
             {showApiDetails ? 'Hide' : 'Show'} API Details
           </button>

@@ -5,15 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run lint && npm run format:check && vite build",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,json,css,md}\"",
     "preview": "vite preview"
   },
   "dependencies": {
     "axios": "^1.15.2",
+    "clsx": "^2.1.1",
+    "eslint-plugin-tailwindcss": "^3.18.3",
+    "prettier-plugin-tailwindcss": "^0.7.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "recharts": "^3.8.1"
+    "recharts": "^3.8.1",
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
@@ -21,12 +28,13 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.5.0",
-    "eslint": "^9.13.0",
+    "eslint": "^9.39.4",
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
     "globals": "^15.11.0",
     "postcss": "^8.5.10",
+    "prettier": "^3.8.3",
     "tailwindcss": "^3.4.19",
     "vite": "^5.4.10"
   }

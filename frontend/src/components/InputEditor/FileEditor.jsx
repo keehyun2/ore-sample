@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import CodeEditor from './CodeEditor';
 
-function FileEditor({ filename, onSave, showHeader = true }) {
+function FileEditor({ filename, onSave, showHeader = true, prismTheme }) {
   const [content, setContent] = useState('');
   const [originalContent, setOriginalContent] = useState('');
   const [loading, setLoading] = useState(true);
@@ -85,6 +85,7 @@ function FileEditor({ filename, onSave, showHeader = true }) {
           value={content}
           onChange={setContent}
           disabled={loading}
+          currentTheme={prismTheme}
         />
       </div>
     </div>

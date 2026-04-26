@@ -191,3 +191,16 @@ FRED_API_KEY=your_api_key_here
 | `FEDFUNDS` | Federal Funds Effective Rate |
 | `EURIBOR6M` | 6-Month EURIBOR Rate |
 | `SOFR` | Secured Overnight Financing Rate |
+
+
+## CSS / Tailwind 규칙
+
+- arbitrary value `[...]` 는 디자인 토큰에 없을 때만 허용
+- 반응형은 항상 mobile-first (`sm:`, `md:` 순서)
+- `flex`와 `block` 같은 상충 클래스 동시 사용 금지
+- 색상은 커스텀 토큰 사용 (예: `text-primary` not `text-blue-500`)
+- 컴포넌트 클래스는 `clsx` + `tailwind-merge` 조합으로만 작성
+
+## 자주 틀리는 패턴 (하지 말 것)
+- `w-full` + `max-w-*` 없이 단독 사용 → 레이아웃 깨짐
+- `absolute` 쓸 때 부모에 `relative` 확인할 것

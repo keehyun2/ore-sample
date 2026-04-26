@@ -9,6 +9,7 @@ import CashflowsTable from './components/Output/CashflowsTable';
 import CurvesChart from './components/Output/CurvesChart';
 import LogViewer from './components/Output/LogViewer';
 import { api } from './services/api';
+import { THEME_OPTIONS } from './components/InputEditor/CodeEditor';
 
 // Files that support form-based editing
 const FORM_EDITABLE_FILES = ['ore.xml', 'irswap.xml', 'conventions.xml'];
@@ -23,6 +24,7 @@ function App() {
   const [resetting, setResetting] = useState(false);
   const [showXMLEditor, setShowXMLEditor] = useState(false);
   const [showLog, setShowLog] = useState(false);
+  const [prismTheme, setPrismTheme] = useState('tomorrow');
 
   useEffect(() => {
     loadFiles();
@@ -98,9 +100,22 @@ function App() {
               onSelect={handleFileSelect}
             />
             <div className="flex-1 flex flex-col min-w-0">
-              {/* Header with Reset and Run buttons */}
+              {/* Header with Reset, XML Editor toggle, Theme, and Run buttons */}
               <div className="flex justify-between items-center px-4 py-3 bg-gray-50 border-b">
-                <span className="text-sm font-medium">{selectedFile}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">{selectedFile}</span>
+                  {!useFormEditor && (
+                    <select
+                      value={prismTheme}
+                      onChange={(e) => setPrismTheme(e.target.value)}
+                      className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
+                    >
+                      {THEME_OPTIONS.map(theme => (
+                        <option key={theme.id} value={theme.id}>{theme.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={handleResetAll}
@@ -109,6 +124,14 @@ function App() {
                   >
                     {resetting ? 'Resetting...' : 'Reset All'}
                   </button>
+                  {FORM_EDITABLE_FILES.includes(selectedFile) && (
+                    <button
+                      className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                      onClick={() => setShowXMLEditor(!showXMLEditor)}
+                    >
+                      {showXMLEditor ? 'View Form Editor' : 'View XML Editor'}
+                    </button>
+                  )}
                   <button
                     onClick={handleRun}
                     disabled={running}
@@ -122,37 +145,20 @@ function App() {
               {/* Editor Content */}
               <div className="flex-1 overflow-y-auto p-3">
                 {useFormEditor ? (
-                  <>
-                    <FormEditor
-                      key={`${selectedFile}-${editorKey}`}
-                      filename={selectedFile}
-                      onSave={handleSave}
-                      showHeader={false}
-                    />
-                    <button
-                      className="my-2 px-4 py-2 bg-gray-100 border rounded text-xs hover:bg-gray-200"
-                      onClick={() => setShowXMLEditor(true)}
-                    >
-                      View XML Editor
-                    </button>
-                  </>
+                  <FormEditor
+                    key={`${selectedFile}-${editorKey}`}
+                    filename={selectedFile}
+                    onSave={handleSave}
+                    showHeader={false}
+                  />
                 ) : (
-                  <>
-                    <FileEditor
-                      key={`${selectedFile}-${editorKey}`}
-                      filename={selectedFile}
-                      onSave={handleSave}
-                      showHeader={false}
-                    />
-                    {FORM_EDITABLE_FILES.includes(selectedFile) && (
-                      <button
-                        className="my-2 px-4 py-2 bg-gray-100 border rounded text-xs hover:bg-gray-200"
-                        onClick={() => setShowXMLEditor(false)}
-                      >
-                        View Form Editor
-                      </button>
-                    )}
-                  </>
+                  <FileEditor
+                    key={`${selectedFile}-${editorKey}`}
+                    filename={selectedFile}
+                    onSave={handleSave}
+                    showHeader={false}
+                    prismTheme={prismTheme}
+                  />
                 )}
               </div>
             </div>
