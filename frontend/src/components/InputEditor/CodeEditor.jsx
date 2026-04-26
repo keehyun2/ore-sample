@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
-import Editor from 'react-simple-code-editor';
-import Prism from 'prismjs';
-import 'prismjs/components/prism-markup';
-import tomorrowCSS from 'prismjs/themes/prism-tomorrow.css?raw';
-import okaidiaCSS from 'prismjs/themes/prism-okaidia.css?raw';
-import coyCSS from 'prismjs/themes/prism-coy.css?raw';
-import solarizedlightCSS from 'prismjs/themes/prism-solarizedlight.css?raw';
-import defaultCSS from 'prismjs/themes/prism.css?raw';
+import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
+import Editor from 'react-simple-code-editor'
+import Prism from 'prismjs'
+import 'prismjs/components/prism-markup'
+import tomorrowCSS from 'prismjs/themes/prism-tomorrow.css?raw'
+import okaidiaCSS from 'prismjs/themes/prism-okaidia.css?raw'
+import coyCSS from 'prismjs/themes/prism-coy.css?raw'
+import solarizedlightCSS from 'prismjs/themes/prism-solarizedlight.css?raw'
+import defaultCSS from 'prismjs/themes/prism.css?raw'
 
 const THEME_OPTIONS = [
   { id: 'tomorrow', name: 'Tomorrow (Dark)' },
@@ -14,7 +15,14 @@ const THEME_OPTIONS = [
   { id: 'coy', name: 'Coy (Light)' },
   { id: 'solarizedlight', name: 'Solarized Light' },
   { id: 'default', name: 'Default (Light)' },
-];
+]
+
+CodeEditor.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
+  currentTheme: PropTypes.string,
+}
 
 const THEME_BACKGROUNDS = {
   tomorrow: '#272822',
@@ -22,7 +30,7 @@ const THEME_BACKGROUNDS = {
   coy: '#fff',
   solarizedlight: '#fdf6e3',
   default: '#f5f2f0',
-};
+}
 
 const THEMES = {
   tomorrow: tomorrowCSS,
@@ -30,28 +38,28 @@ const THEMES = {
   coy: coyCSS,
   solarizedlight: solarizedlightCSS,
   default: defaultCSS,
-};
+}
 
 function CodeEditor({ value, onChange, disabled, currentTheme = 'tomorrow' }) {
-  const [key, setKey] = useState(0);
+  const [key, setKey] = useState(0)
 
   useEffect(() => {
     // Remove any existing theme style
-    const existing = document.getElementById('prism-theme-style');
-    if (existing) existing.remove();
+    const existing = document.getElementById('prism-theme-style')
+    if (existing) existing.remove()
 
     // Add new theme style
-    const css = THEMES[currentTheme] || THEMES.tomorrow;
-    const style = document.createElement('style');
-    style.id = 'prism-theme-style';
-    style.textContent = css;
-    document.head.appendChild(style);
+    const css = THEMES[currentTheme] || THEMES.tomorrow
+    const style = document.createElement('style')
+    style.id = 'prism-theme-style'
+    style.textContent = css
+    document.head.appendChild(style)
 
     // Force re-render
-    setKey((prev) => prev + 1);
-  }, [currentTheme]);
+    setKey((prev) => prev + 1)
+  }, [currentTheme])
 
-  const backgroundColor = THEME_BACKGROUNDS[currentTheme] || THEME_BACKGROUNDS.tomorrow;
+  const backgroundColor = THEME_BACKGROUNDS[currentTheme] || THEME_BACKGROUNDS.tomorrow
 
   return (
     <div className="h-full overflow-auto" style={{ backgroundColor }}>
@@ -71,8 +79,8 @@ function CodeEditor({ value, onChange, disabled, currentTheme = 'tomorrow' }) {
         }}
       />
     </div>
-  );
+  )
 }
 
-export { CodeEditor, THEME_OPTIONS };
-export default CodeEditor;
+export { CodeEditor, THEME_OPTIONS }
+export default CodeEditor

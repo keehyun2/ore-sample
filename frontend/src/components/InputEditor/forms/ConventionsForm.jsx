@@ -1,79 +1,77 @@
-import React from 'react';
+import PropTypes from 'prop-types'
 
-const formInputClass = "px-2 py-1 text-xs border rounded focus:outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50";
-const formLabelClass = "text-xs text-gray-600 mb-1";
-const formFieldClass = "flex flex-col";
+const formInputClass =
+  'px-2 py-1 text-xs border rounded focus:outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
+const formLabelClass = 'text-xs text-gray-600 mb-1'
+const formFieldClass = 'flex flex-col'
 
 function ConventionsForm({ data, onChange }) {
   const handleDepositChange = (index, field, value) => {
-    const newDeposits = [...data.deposits];
+    const newDeposits = [...data.deposits]
     newDeposits[index] = {
       ...newDeposits[index],
       [field]: field === 'indexBased' ? value === 'true' : value,
-    };
+    }
     onChange({
       ...data,
       deposits: newDeposits,
-    });
-  };
+    })
+  }
 
   const handleOISChange = (index, field, value) => {
-    const newOIS = [...data.ois];
+    const newOIS = [...data.ois]
     newOIS[index] = {
       ...newOIS[index],
       [field]: field === 'eom' ? value === 'true' : value,
-    };
+    }
     onChange({
       ...data,
       ois: newOIS,
-    });
-  };
+    })
+  }
 
   const handleSwapChange = (index, field, value) => {
-    const newSwaps = [...data.swaps];
+    const newSwaps = [...data.swaps]
     newSwaps[index] = {
       ...newSwaps[index],
       [field]: value,
-    };
+    }
     onChange({
       ...data,
       swaps: newSwaps,
-    });
-  };
+    })
+  }
 
+  // eslint-disable-next-line react/prop-types
   const FormField = ({ label, children }) => (
     <div className={formFieldClass}>
       <label className={formLabelClass}>{label}</label>
       {children}
     </div>
-  );
+  )
 
+  // eslint-disable-next-line react/prop-types
   const FormSelect = ({ value, onChange, children }) => (
     <select value={value} onChange={onChange} className={formInputClass}>
       {children}
     </select>
-  );
+  )
 
+  // eslint-disable-next-line react/prop-types
   const FormInput = ({ type, value, onChange, step }) => (
-    <input
-      type={type}
-      step={step}
-      value={value}
-      onChange={onChange}
-      className={formInputClass}
-    />
-  );
+    <input type={type} step={step} value={value} onChange={onChange} className={formInputClass} />
+  )
 
   return (
-    <div className="bg-white rounded p-3">
+    <div className="rounded bg-white p-3">
       <h3 className="m-0 mb-3 text-base font-semibold">Market Conventions</h3>
 
       {/* Deposit Conventions */}
-      <div className="mb-4 pb-4 border-b border-gray-200">
+      <div className="mb-4 border-b border-gray-200 pb-4">
         <h4 className="m-0 mb-2 text-sm font-semibold">Deposit Conventions</h4>
         {data.deposits.map((deposit, index) => (
-          <div key={deposit.id || index} className="py-2 px-2 bg-gray-50 rounded mb-2 last:mb-0">
-            <h5 className="mt-0.5 mb-2 text-xs text-gray-600">{deposit.id}</h5>
+          <div key={deposit.id || index} className="mb-2 rounded bg-gray-50 p-2 last:mb-0">
+            <h5 className="mb-2 mt-0.5 text-xs text-gray-600">{deposit.id}</h5>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
               <FormField label="ID">
                 <FormInput
@@ -104,11 +102,11 @@ function ConventionsForm({ data, onChange }) {
       </div>
 
       {/* OIS Conventions */}
-      <div className="mb-4 pb-4 border-b border-gray-200">
+      <div className="mb-4 border-b border-gray-200 pb-4">
         <h4 className="m-0 mb-2 text-sm font-semibold">OIS Conventions</h4>
         {data.ois.map((ois, index) => (
-          <div key={ois.id || index} className="py-2 px-2 bg-gray-50 rounded mb-2 last:mb-0">
-            <h5 className="mt-0.5 mb-2 text-xs text-gray-600">{ois.id}</h5>
+          <div key={ois.id || index} className="mb-2 rounded bg-gray-50 p-2 last:mb-0">
+            <h5 className="mb-2 mt-0.5 text-xs text-gray-600">{ois.id}</h5>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
               <FormField label="ID">
                 <FormInput
@@ -210,8 +208,8 @@ function ConventionsForm({ data, onChange }) {
       <div className="mb-0 pb-0">
         <h4 className="m-0 mb-2 text-sm font-semibold">Swap Conventions</h4>
         {data.swaps.map((swap, index) => (
-          <div key={swap.id || index} className="py-2 px-2 bg-gray-50 rounded mb-2 last:mb-0">
-            <h5 className="mt-0.5 mb-2 text-xs text-gray-600">{swap.id}</h5>
+          <div key={swap.id || index} className="mb-2 rounded bg-gray-50 p-2 last:mb-0">
+            <h5 className="mb-2 mt-0.5 text-xs text-gray-600">{swap.id}</h5>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
               <FormField label="ID">
                 <FormInput
@@ -273,7 +271,12 @@ function ConventionsForm({ data, onChange }) {
         ))}
       </div>
     </div>
-  );
+  )
 }
 
-export default ConventionsForm;
+ConventionsForm.propTypes = {
+  data: PropTypes.object.isRequired,
+  onChange: PropTypes.func.isRequired,
+}
+
+export default ConventionsForm

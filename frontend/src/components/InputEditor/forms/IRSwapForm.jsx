@@ -1,12 +1,12 @@
-import React from 'react';
+import PropTypes from 'prop-types'
 
 function IRSwapForm({ data, onChange }) {
   const handleChange = (field, value) => {
     onChange({
       ...data,
       [field]: value,
-    });
-  };
+    })
+  }
 
   const handleFixedLegChange = (field, value) => {
     onChange({
@@ -15,8 +15,8 @@ function IRSwapForm({ data, onChange }) {
         ...data.fixedLeg,
         [field]: value,
       },
-    });
-  };
+    })
+  }
 
   const handleFloatingLegChange = (field, value) => {
     onChange({
@@ -25,50 +25,54 @@ function IRSwapForm({ data, onChange }) {
         ...data.floatingLeg,
         [field]: value,
       },
-    });
-  };
+    })
+  }
 
-const formInputClass = "px-2 py-1 text-xs border rounded focus:outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50";
-const formLabelClass = "text-xs text-gray-600 mb-1";
-const formFieldClass = "flex flex-col";
+  const formInputClass =
+    'px-2 py-1 text-xs border rounded focus:outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
+  const formLabelClass = 'text-xs text-gray-600 mb-1'
+  const formFieldClass = 'flex flex-col'
 
-function FormField({ label, children }) {
+  // eslint-disable-next-line react/prop-types
+  function FormField({ label, children }) {
+    return (
+      <div className={formFieldClass}>
+        <label className={formLabelClass}>{label}</label>
+        {children}
+      </div>
+    )
+  }
+
+  // eslint-disable-next-line react/prop-types
+  function FormSelect({ value, onChange, children, disabled }) {
+    return (
+      <select value={value} onChange={onChange} disabled={disabled} className={formInputClass}>
+        {children}
+      </select>
+    )
+  }
+
+  // eslint-disable-next-line react/prop-types
+  function FormInput({ type, value, onChange, step, placeholder, disabled }) {
+    return (
+      <input
+        type={type}
+        step={step}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className={formInputClass}
+      />
+    )
+  }
+
   return (
-    <div className={formFieldClass}>
-      <label className={formLabelClass}>{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function FormSelect({ value, onChange, children, disabled }) {
-  return (
-    <select value={value} onChange={onChange} disabled={disabled} className={formInputClass}>
-      {children}
-    </select>
-  );
-}
-
-function FormInput({ type, value, onChange, step, placeholder, disabled }) {
-  return (
-    <input
-      type={type}
-      step={step}
-      placeholder={placeholder}
-      value={value}
-      onChange={onChange}
-      disabled={disabled}
-      className={formInputClass}
-    />
-  );
-}
-
-  return (
-    <div className="bg-white rounded p-3">
+    <div className="rounded bg-white p-3">
       <h3 className="m-0 mb-3 text-base font-semibold">IR Swap Configuration</h3>
 
       {/* Trade Info Section */}
-      <div className="mb-4 pb-4 border-b border-gray-200">
+      <div className="mb-4 border-b border-gray-200 pb-4">
         <h4 className="m-0 mb-2 text-sm font-semibold">Trade Information</h4>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
           <FormField label="Trade ID">
@@ -104,7 +108,7 @@ function FormInput({ type, value, onChange, step, placeholder, disabled }) {
       </div>
 
       {/* Fixed Leg Section */}
-      <div className="mb-4 pb-4 border-b border-gray-200">
+      <div className="mb-4 border-b border-gray-200 pb-4">
         <h4 className="m-0 mb-2 text-sm font-semibold">Fixed Leg (Receiver)</h4>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
           <FormField label="Currency">
@@ -362,7 +366,12 @@ function FormInput({ type, value, onChange, step, placeholder, disabled }) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default IRSwapForm;
+IRSwapForm.propTypes = {
+  data: PropTypes.object.isRequired,
+  onChange: PropTypes.func.isRequired,
+}
+
+export default IRSwapForm

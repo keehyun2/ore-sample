@@ -6,17 +6,17 @@
 // ==================== ORE XML Parser ====================
 
 export function parseOREXML(xmlString) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xmlString, 'text/xml');
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(xmlString, 'text/xml')
 
   const getParam = (parent, name) => {
-    const param = parent.querySelector(`Parameter[name="${name}"]`);
-    return param ? param.textContent : '';
-  };
+    const param = parent.querySelector(`Parameter[name="${name}"]`)
+    return param ? param.textContent : ''
+  }
 
-  const setup = doc.querySelector('Setup');
-  const analytics = doc.querySelector('Analytics');
-  const markets = doc.querySelector('Markets');
+  const setup = doc.querySelector('Setup')
+  const analytics = doc.querySelector('Analytics')
+  const markets = doc.querySelector('Markets')
 
   return {
     setup: {
@@ -49,20 +49,29 @@ export function parseOREXML(xmlString) {
       },
       cashflow: {
         active: getParam(analytics.querySelector('Analytic[type="cashflow"]'), 'active'),
-        outputFileName: getParam(analytics.querySelector('Analytic[type="cashflow"]'), 'outputFileName'),
+        outputFileName: getParam(
+          analytics.querySelector('Analytic[type="cashflow"]'),
+          'outputFileName'
+        ),
       },
       curves: {
         active: getParam(analytics.querySelector('Analytic[type="curves"]'), 'active'),
-        configuration: getParam(analytics.querySelector('Analytic[type="curves"]'), 'configuration'),
+        configuration: getParam(
+          analytics.querySelector('Analytic[type="curves"]'),
+          'configuration'
+        ),
         grid: getParam(analytics.querySelector('Analytic[type="curves"]'), 'grid'),
-        outputFileName: getParam(analytics.querySelector('Analytic[type="curves"]'), 'outputFileName'),
+        outputFileName: getParam(
+          analytics.querySelector('Analytic[type="curves"]'),
+          'outputFileName'
+        ),
       },
     },
-  };
+  }
 }
 
 export function generateOREXML(data) {
-  const { setup, markets, analytics } = data;
+  const { setup, markets, analytics } = data
 
   return `<?xml version="1.0"?>
 <ORE>
@@ -105,30 +114,34 @@ export function generateOREXML(data) {
       <Parameter name="outputFileName">${analytics.curves.outputFileName}</Parameter>
     </Analytic>
   </Analytics>
-</ORE>`;
+</ORE>`
 }
 
 // ==================== IR Swap XML Parser ====================
 
 export function parseIRSwapXML(xmlString) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xmlString, 'text/xml');
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(xmlString, 'text/xml')
 
-  const trade = doc.querySelector('Trade');
-  const envelope = trade.querySelector('Envelope');
-  const swapData = trade.querySelector('SwapData');
-  const legs = swapData.querySelectorAll('LegData');
+  const trade = doc.querySelector('Trade')
+  const envelope = trade.querySelector('Envelope')
+  const swapData = trade.querySelector('SwapData')
+  const legs = swapData.querySelectorAll('LegData')
 
-  const fixedLeg = Array.from(legs).find(leg => leg.querySelector('LegType').textContent === 'Fixed');
-  const floatingLeg = Array.from(legs).find(leg => leg.querySelector('LegType').textContent === 'Floating');
+  const fixedLeg = Array.from(legs).find(
+    (leg) => leg.querySelector('LegType').textContent === 'Fixed'
+  )
+  const floatingLeg = Array.from(legs).find(
+    (leg) => leg.querySelector('LegType').textContent === 'Floating'
+  )
 
   const getText = (parent, tag) => {
-    const el = parent.querySelector(tag);
-    return el ? el.textContent : '';
-  };
+    const el = parent.querySelector(tag)
+    return el ? el.textContent : ''
+  }
 
   const parseLegData = (leg) => {
-    const scheduleRules = leg.querySelector('ScheduleData Rules');
+    const scheduleRules = leg.querySelector('ScheduleData Rules')
     return {
       legType: getText(leg, 'LegType'),
       payer: getText(leg, 'Payer') === 'true',
@@ -143,11 +156,11 @@ export function parseIRSwapXML(xmlString) {
       convention: getText(scheduleRules, 'Convention'),
       termConvention: getText(scheduleRules, 'TermConvention'),
       rule: getText(scheduleRules, 'Rule'),
-    };
-  };
+    }
+  }
 
-  const fixedData = fixedLeg.querySelector('FixedLegData');
-  const floatingData = floatingLeg.querySelector('FloatingLegData');
+  const fixedData = fixedLeg.querySelector('FixedLegData')
+  const floatingData = floatingLeg.querySelector('FloatingLegData')
 
   return {
     tradeId: trade.getAttribute('id'),
@@ -165,11 +178,11 @@ export function parseIRSwapXML(xmlString) {
       isInArrears: getText(floatingData, 'IsInArrears') === 'true',
       fixingDays: getText(floatingData, 'FixingDays'),
     },
-  };
+  }
 }
 
 export function generateIRSwapXML(data) {
-  const { tradeId, tradeType, counterParty, nettingSetId, fixedLeg, floatingLeg } = data;
+  const { tradeId, tradeType, counterParty, nettingSetId, fixedLeg, floatingLeg } = data
 
   return `<?xml version="1.0"?>
 <Portfolio>
@@ -244,38 +257,38 @@ export function generateIRSwapXML(data) {
       </LegData>
     </SwapData>
   </Trade>
-</Portfolio>`;
+</Portfolio>`
 }
 
 // ==================== Conventions XML Parser ====================
 
 export function parseConventionsXML(xmlString) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xmlString, 'text/xml');
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(xmlString, 'text/xml')
 
   const getText = (parent, tag) => {
-    const el = parent.querySelector(tag);
-    return el ? el.textContent : '';
-  };
+    const el = parent.querySelector(tag)
+    return el ? el.textContent : ''
+  }
 
   const getBool = (parent, tag) => {
-    const el = parent.querySelector(tag);
-    return el ? el.textContent === 'true' : false;
-  };
+    const el = parent.querySelector(tag)
+    return el ? el.textContent === 'true' : false
+  }
 
   // Parse Deposit conventions
-  const deposits = [];
-  doc.querySelectorAll('Deposit').forEach(dep => {
+  const deposits = []
+  doc.querySelectorAll('Deposit').forEach((dep) => {
     deposits.push({
       id: getText(dep, 'Id'),
       indexBased: getBool(dep, 'IndexBased'),
       index: getText(dep, 'Index'),
-    });
-  });
+    })
+  })
 
   // Parse OIS conventions
-  const oisConventions = [];
-  doc.querySelectorAll('OIS').forEach(ois => {
+  const oisConventions = []
+  doc.querySelectorAll('OIS').forEach((ois) => {
     oisConventions.push({
       id: getText(ois, 'Id'),
       spotLag: getText(ois, 'SpotLag'),
@@ -287,12 +300,12 @@ export function parseConventionsXML(xmlString) {
       fixedConvention: getText(ois, 'FixedConvention'),
       fixedPaymentConvention: getText(ois, 'FixedPaymentConvention'),
       rule: getText(ois, 'Rule'),
-    });
-  });
+    })
+  })
 
   // Parse Swap conventions
-  const swapConventions = [];
-  doc.querySelectorAll('Swap').forEach(swap => {
+  const swapConventions = []
+  doc.querySelectorAll('Swap').forEach((swap) => {
     swapConventions.push({
       id: getText(swap, 'Id'),
       fixedCalendar: getText(swap, 'FixedCalendar'),
@@ -300,35 +313,35 @@ export function parseConventionsXML(xmlString) {
       fixedConvention: getText(swap, 'FixedConvention'),
       fixedDayCounter: getText(swap, 'FixedDayCounter'),
       index: getText(swap, 'Index'),
-    });
-  });
+    })
+  })
 
   return {
     deposits,
     ois: oisConventions,
     swaps: swapConventions,
-  };
+  }
 }
 
 export function generateConventionsXML(data) {
-  const { deposits, ois, swaps } = data;
+  const { deposits, ois, swaps } = data
 
   let xml = `<?xml version="1.0" encoding="utf-8"?>
 <Conventions>
-`;
+`
 
   // Deposit conventions
-  deposits.forEach(dep => {
+  deposits.forEach((dep) => {
     xml += `  <Deposit>
     <Id>${dep.id}</Id>
     <IndexBased>${dep.indexBased}</IndexBased>
     <Index>${dep.index}</Index>
   </Deposit>
-`;
-  });
+`
+  })
 
   // OIS conventions
-  ois.forEach(o => {
+  ois.forEach((o) => {
     xml += `  <OIS>
     <Id>${o.id}</Id>
     <SpotLag>${o.spotLag}</SpotLag>
@@ -341,11 +354,11 @@ export function generateConventionsXML(data) {
     <FixedPaymentConvention>${o.fixedPaymentConvention}</FixedPaymentConvention>
     <Rule>${o.rule}</Rule>
   </OIS>
-`;
-  });
+`
+  })
 
   // Swap conventions
-  swaps.forEach(s => {
+  swaps.forEach((s) => {
     xml += `  <Swap>
     <Id>${s.id}</Id>
     <FixedCalendar>${s.fixedCalendar}</FixedCalendar>
@@ -354,10 +367,10 @@ export function generateConventionsXML(data) {
     <FixedDayCounter>${s.fixedDayCounter}</FixedDayCounter>
     <Index>${s.index}</Index>
   </Swap>
-`;
-  });
+`
+  })
 
-  xml += `</Conventions>`;
+  xml += `</Conventions>`
 
-  return xml;
+  return xml
 }
