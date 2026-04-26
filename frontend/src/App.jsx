@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react';
 import { Tabs, Tab } from './components/Tabs';
 import FileSelector from './components/InputEditor/FileSelector';
 import FileEditor from './components/InputEditor/FileEditor';
+import FormEditor from './components/InputEditor/forms/FormEditor';
 import FREDRates from './components/InputEditor/FREDRates';
 import NPVDisplay from './components/Output/NPVDisplay';
 import CashflowsTable from './components/Output/CashflowsTable';
 import CurvesChart from './components/Output/CurvesChart';
 import LogViewer from './components/Output/LogViewer';
 import { api } from './services/api';
-import './App.css';
+
+// Files that support form-based editing
+const FORM_EDITABLE_FILES = ['ore.xml', 'irswap.xml', 'conventions.xml'];
 
 function App() {
   const [files, setFiles] = useState([]);
@@ -18,6 +21,8 @@ function App() {
   const [running, setRunning] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
   const [resetting, setResetting] = useState(false);
+  const [showXMLEditor, setShowXMLEditor] = useState(false);
+  const [showLog, setShowLog] = useState(false);
 
   useEffect(() => {
     loadFiles();
@@ -34,6 +39,7 @@ function App() {
 
   const handleRun = async () => {
     setRunning(true);
+    setShowLog(false);
     setActiveTab('Output Results');
     try {
       const result = await api.runORE();
@@ -69,44 +75,86 @@ function App() {
     }
   };
 
+  const handleFileSelect = (file) => {
+    setSelectedFile(file);
+    setShowXMLEditor(false); // Reset to form view when switching files
+  };
+
+  const useFormEditor = FORM_EDITABLE_FILES.includes(selectedFile) && !showXMLEditor;
+
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>ORE IR Swap Valuation</h1>
-        <p className="subtitle">Interest Rate Swap Pricing Engine</p>
+    <div className="min-h-screen flex flex-col">
+      <header className="bg-gradient-to-br from-[#1e40af] to-[#3b82f6] text-white py-3 px-4 text-center">
+        <h1 className="m-0 text-xl font-semibold">ORE IR Swap Valuation</h1>
+        <p className="mt-1 opacity-90 text-xs">Interest Rate Swap Pricing Engine</p>
       </header>
 
       <Tabs activeTab={activeTab} onChange={setActiveTab}>
         <Tab label="Input Files">
-          <div className="input-tab">
+          <div className="flex max-w-full mx-auto w-full h-[calc(100vh-52px)]">
             <FileSelector
               files={files}
               selected={selectedFile}
-              onSelect={setSelectedFile}
+              onSelect={handleFileSelect}
             />
-            <FileEditor
-              key={`${selectedFile}-${editorKey}`}
-              filename={selectedFile}
-              onSave={handleSave}
-            />
-            <div className="run-section">
-              <div className="action-buttons">
-                <button
-                  onClick={handleResetAll}
-                  disabled={resetting}
-                  className="reset-all-button"
-                >
-                  {resetting ? 'Resetting...' : 'Reset to Original Files'}
-                </button>
-                <button
-                  onClick={handleRun}
-                  disabled={running}
-                  className="run-button"
-                >
-                  {running ? 'Running ORE...' : 'Run Valuation'}
-                </button>
+            <div className="flex-1 flex flex-col min-w-0">
+              {/* Header with Reset and Run buttons */}
+              <div className="flex justify-between items-center px-4 py-3 bg-gray-50 border-b">
+                <span className="text-sm font-medium">{selectedFile}</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleResetAll}
+                    disabled={resetting}
+                    className="px-3 py-1 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:bg-gray-400"
+                  >
+                    {resetting ? 'Resetting...' : 'Reset All'}
+                  </button>
+                  <button
+                    onClick={handleRun}
+                    disabled={running}
+                    className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
+                  >
+                    {running ? 'Running...' : 'Run Valuation'}
+                  </button>
+                </div>
               </div>
-              {running && <p className="running-text">Executing ORE... this may take a moment.</p>}
+
+              {/* Editor Content */}
+              <div className="flex-1 overflow-y-auto p-3">
+                {useFormEditor ? (
+                  <>
+                    <FormEditor
+                      key={`${selectedFile}-${editorKey}`}
+                      filename={selectedFile}
+                      onSave={handleSave}
+                      showHeader={false}
+                    />
+                    <button
+                      className="my-2 px-4 py-2 bg-gray-100 border rounded text-xs hover:bg-gray-200"
+                      onClick={() => setShowXMLEditor(true)}
+                    >
+                      View XML Editor
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <FileEditor
+                      key={`${selectedFile}-${editorKey}`}
+                      filename={selectedFile}
+                      onSave={handleSave}
+                      showHeader={false}
+                    />
+                    {FORM_EDITABLE_FILES.includes(selectedFile) && (
+                      <button
+                        className="my-2 px-4 py-2 bg-gray-100 border rounded text-xs hover:bg-gray-200"
+                        onClick={() => setShowXMLEditor(false)}
+                      >
+                        View Form Editor
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </Tab>
@@ -116,16 +164,16 @@ function App() {
         </Tab>
 
         <Tab label="Output Results">
-          <div className="output-tab">
+          <div className="max-w-[1200px] mx-auto">
             {running && (
-              <div className="loading-state">
-                <div className="spinner"></div>
+              <div className="text-center py-12">
+                <div className="w-10 h-10 mx-auto mb-4 border-3 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
                 <p>Running ORE valuation...</p>
               </div>
             )}
 
             {!running && !results && (
-              <div className="no-results">
+              <div className="text-center py-12 text-gray-600">
                 <p>No results available.</p>
                 <p>Run the valuation from the Input Files tab first.</p>
               </div>
@@ -134,18 +182,27 @@ function App() {
             {!running && results && (
               <>
                 {!results.success && (
-                  <div className="error-banner">
-                    <h3>Execution Failed</h3>
+                  <div className="bg-red-100 border border-red-200 rounded-xl p-6 mb-8">
+                    <h3 className="m-0 mb-4 text-red-800">Execution Failed</h3>
                     <LogViewer logs={results.logs} error={results.error} />
                   </div>
                 )}
 
                 {results.success && results.results && (
-                  <div className="results-container">
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="m-0 text-xl font-semibold">Valuation Results</h2>
+                      <button
+                        onClick={() => setShowLog(!showLog)}
+                        className="px-3 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
+                      >
+                        {showLog ? 'Hide Log' : 'Show Log'}
+                      </button>
+                    </div>
                     <NPVDisplay data={results.results.npv} />
                     <CashflowsTable flows={results.results.flows} />
                     <CurvesChart curves={results.results.curves} />
-                    <LogViewer logs={results.logs} />
+                    {showLog && <LogViewer logs={results.logs} />}
                   </div>
                 )}
               </>

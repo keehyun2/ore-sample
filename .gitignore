@@ -45,3 +45,6 @@ frontend/.cache/
 *.test
 *.out
 go.work
+
+__debug*
+

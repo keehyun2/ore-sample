@@ -11,35 +11,35 @@ function NPVDisplay({ data }) {
   };
 
   return (
-    <div className="npv-display">
-      <h2>Net Present Value</h2>
-      <div className="npv-card">
-        <div className="npv-value">
-          <span className="label">NPV</span>
-          <span className={`value ${data.npv >= 0 ? 'positive' : 'negative'}`}>
+    <div className="mb-8">
+      <h2 className="m-0 mb-4 text-2xl text-text-primary">Net Present Value</h2>
+      <div className="bg-card-bg rounded-xl shadow-md overflow-hidden">
+        <div className="py-8 text-center bg-gradient-to-br from-[#f0f9ff] to-[#e0f2fe] border-b border-border-color">
+          <span className="block text-base text-text-secondary mb-2">NPV</span>
+          <span className={`text-4xl font-bold ${data.npv >= 0 ? 'text-success-color' : 'text-error-color'}`}>
             {data.currency} {formatNumber(data.npv)}
           </span>
         </div>
-        <div className="npv-details">
-          <div className="detail-row">
-            <span className="label">Trade ID:</span>
-            <span className="value">{data.tradeId}</span>
+        <div className="py-6 px-8">
+          <div className="flex justify-between py-3 border-b border-border-color last:border-0">
+            <span className="font-medium text-text-secondary">Trade ID:</span>
+            <span className="font-semibold text-text-primary">{data.tradeId}</span>
           </div>
-          <div className="detail-row">
-            <span className="label">Trade Type:</span>
-            <span className="value">{data.tradeType}</span>
+          <div className="flex justify-between py-3 border-b border-border-color last:border-0">
+            <span className="font-medium text-text-secondary">Trade Type:</span>
+            <span className="font-semibold text-text-primary">{data.tradeType}</span>
           </div>
-          <div className="detail-row">
-            <span className="label">Maturity:</span>
-            <span className="value">{data.maturity}</span>
+          <div className="flex justify-between py-3 border-b border-border-color last:border-0">
+            <span className="font-medium text-text-secondary">Maturity:</span>
+            <span className="font-semibold text-text-primary">{data.maturity}</span>
           </div>
-          <div className="detail-row">
-            <span className="label">Notional:</span>
-            <span className="value">{data.currency} {formatNumber(data.notional)}</span>
+          <div className="flex justify-between py-3 border-b border-border-color last:border-0">
+            <span className="font-medium text-text-secondary">Notional:</span>
+            <span className="font-semibold text-text-primary">{data.currency} {formatNumber(data.notional)}</span>
           </div>
-          <div className="detail-row">
-            <span className="label">Counterparty:</span>
-            <span className="value">{data.counterParty}</span>
+          <div className="flex justify-between py-3 border-b-0">
+            <span className="font-medium text-text-secondary">Counterparty:</span>
+            <span className="font-semibold text-text-primary">{data.counterParty}</span>
           </div>
         </div>
       </div>

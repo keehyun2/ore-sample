@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import CodeEditor from './CodeEditor';
 
-function FileEditor({ filename, onSave }) {
+function FileEditor({ filename, onSave, showHeader = true }) {
   const [content, setContent] = useState('');
   const [originalContent, setOriginalContent] = useState('');
   const [loading, setLoading] = useState(true);
@@ -48,42 +48,45 @@ function FileEditor({ filename, onSave }) {
   };
 
   if (loading) {
-    return <div className="file-editor loading">Loading file...</div>;
+    return <div className="p-8 text-center text-gray-600">Loading file...</div>;
   }
 
   const hasChanges = content !== originalContent;
 
   return (
-    <div className="file-editor">
+    <div className="flex flex-col h-full">
       {message && (
-        <div className={`message ${message.type}`}>
+        <div className={`p-3 rounded mb-3 text-sm ${
+          message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
           {message.text}
         </div>
       )}
-      <div className="editor-actions">
-        <h3>{filename}</h3>
-        <div className="buttons">
+      {!showHeader && (
+        <div className="flex gap-2 mb-3">
           <button
             onClick={handleSave}
             disabled={!hasChanges || saving}
-            className="save-btn"
+            className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
           >
-            {saving ? 'Saving...' : hasChanges ? 'Save Changes' : 'Saved'}
+            {saving ? 'Saving...' : hasChanges ? 'Save' : 'Saved'}
           </button>
           <button
             onClick={handleReset}
             disabled={!hasChanges}
-            className="reset-btn"
+            className="px-3 py-1 text-xs bg-gray-100 border rounded hover:bg-gray-200 disabled:opacity-50"
           >
             Reset
           </button>
         </div>
+      )}
+      <div className={showHeader ? '' : 'flex-1 min-h-0'}>
+        <CodeEditor
+          value={content}
+          onChange={setContent}
+          disabled={loading}
+        />
       </div>
-      <CodeEditor
-        value={content}
-        onChange={setContent}
-        disabled={loading}
-      />
     </div>
   );
 }

@@ -14,22 +14,22 @@ function CodeEditor({ value, onChange, disabled }) {
   };
 
   return (
-    <Editor
-      value={value}
-      onValueChange={onChange}
-      highlight={highlight}
-      disabled={disabled}
-      padding={16}
-      style={{
-        fontFamily: '"Fira Code", "Fira Mono", Monaco, "Menlo", "Ubuntu Mono", monospace',
-        fontSize: 14,
-        lineHeight: 1.6,
-        minHeight: 400,
-        backgroundColor: '#2d2d2d',
-        color: '#ccc',
-      }}
-      textareaClassName="code-editor-textarea"
-    />
+    <div className="h-full overflow-auto">
+      <Editor
+        value={value}
+        onValueChange={onChange}
+        highlight={highlight}
+        disabled={disabled}
+        padding={12}
+        style={{
+          fontFamily: 'monospace',
+          fontSize: 13,
+          lineHeight: 1.5,
+          minHeight: '100%',
+        }}
+        textareaClassName="w-full h-full border-none outline-none resize-none font-mono bg-transparent"
+      />
+    </div>
   );
 }
 

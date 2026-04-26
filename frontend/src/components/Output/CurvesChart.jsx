@@ -20,10 +20,10 @@ function CurvesChart({ curves }) {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="custom-tooltip">
-          <p className="tooltip-date">{label}</p>
+        <div className="bg-white/95 border border-border-color rounded-lg py-3 px-4 shadow-lg">
+          <p className="m-0 mb-2 font-semibold text-text-primary">{label}</p>
           {payload.map((entry, index) => (
-            <p key={index} style={{ color: entry.color }}>
+            <p key={index} className="my-1 text-sm" style={{ color: entry.color }}>
               {entry.name}: {formatPercent(entry.value)}
             </p>
           ))}
@@ -34,8 +34,8 @@ function CurvesChart({ curves }) {
   };
 
   return (
-    <div className="curves-chart">
-      <h2>Yield Curves</h2>
+    <div className="mb-8 bg-card-bg rounded-xl shadow-md p-6">
+      <h2 className="m-0 mb-4 text-2xl text-text-primary">Yield Curves</h2>
       <ResponsiveContainer width="100%" height={400}>
         <LineChart data={curves} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />

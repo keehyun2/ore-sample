@@ -72,10 +72,10 @@ func getEnv(key, defaultValue string) string {
 }
 
 type RunResult struct {
-	Success bool        `json:"success"`
-	Results *Results    `json:"results,omitempty"`
-	Logs    string      `json:"logs"`
-	Error   string      `json:"error,omitempty"`
+	Success bool     `json:"success"`
+	Results *Results `json:"results,omitempty"`
+	Logs    string   `json:"logs"`
+	Error   string   `json:"error,omitempty"`
 }
 
 type Results struct {
@@ -147,9 +147,9 @@ func handleGetConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	config := map[string]string{
-		"orePath":     orePath,
-		"exampleDir":  exampleDir,
-		"workDir":     workDir,
+		"orePath":    orePath,
+		"exampleDir": exampleDir,
+		"workDir":    workDir,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -546,8 +546,8 @@ type FREDObservation struct {
 }
 
 type FREDSeriesResponse struct {
-	SeriesID string           `json:"series_id"`
-	SeriesName string         `json:"series_name,omitempty"`
+	SeriesID     string            `json:"series_id"`
+	SeriesName   string            `json:"series_name,omitempty"`
 	Observations []FREDObservation `json:"observations"`
 }
 
@@ -574,7 +574,7 @@ func handleGetFREDRates(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
 		json.NewEncoder(w).Encode(map[string]string{
-			"error": "FRED_API_KEY not configured. Please add FRED_API_KEY to your .env file.",
+			"error":        "FRED_API_KEY not configured. Please add FRED_API_KEY to your .env file.",
 			"instructions": "Get your API key from https://fred.stlouisfed.org/docs/api/api_key.html",
 		})
 		return
@@ -607,7 +607,7 @@ func handleUpdateMarketFromFRED(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
 		json.NewEncoder(w).Encode(map[string]string{
-			"error": "FRED_API_KEY not configured",
+			"error":        "FRED_API_KEY not configured",
 			"instructions": "Add FRED_API_KEY to your .env file",
 		})
 		return
@@ -675,11 +675,11 @@ func handleUpdateMarketFromFRED(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"status": "ok",
-		"message": "market.txt and curveconfig.xml updated with FRED data",
-		"rates": rates,
-		"asofDate": asofDate,
-		"marketContent": marketContent,
+		"status":             "ok",
+		"message":            "market.txt and curveconfig.xml updated with FRED data",
+		"rates":              rates,
+		"asofDate":           asofDate,
+		"marketContent":      marketContent,
 		"curveConfigContent": curveConfigContent,
 	})
 }
@@ -728,18 +728,18 @@ func fetchFREDRates(seriesIDs []string) ([]FREDRate, error) {
 
 func getSeriesName(seriesID string) string {
 	names := map[string]string{
-		"DGS10":      "10-Year Treasury Constant Maturity Rate",
-		"DGS2":       "2-Year Treasury Constant Maturity Rate",
-		"DGS3MO":     "3-Month Treasury Constant Maturity Rate",
-		"DGS1MO":     "1-Month Treasury Constant Maturity Rate",
-		"DGS5":       "5-Year Treasury Constant Maturity Rate",
-		"DGS7":       "7-Year Treasury Constant Maturity Rate",
-		"DGS20":      "20-Year Treasury Constant Maturity Rate",
-		"DGS30":      "30-Year Treasury Constant Maturity Rate",
-		"FEDFUNDS":   "Federal Funds Effective Rate",
-		"EURIBOR6M":  "6-Month EURIBOR Rate",
+		"DGS10":       "10-Year Treasury Constant Maturity Rate",
+		"DGS2":        "2-Year Treasury Constant Maturity Rate",
+		"DGS3MO":      "3-Month Treasury Constant Maturity Rate",
+		"DGS1MO":      "1-Month Treasury Constant Maturity Rate",
+		"DGS5":        "5-Year Treasury Constant Maturity Rate",
+		"DGS7":        "7-Year Treasury Constant Maturity Rate",
+		"DGS20":       "20-Year Treasury Constant Maturity Rate",
+		"DGS30":       "30-Year Treasury Constant Maturity Rate",
+		"FEDFUNDS":    "Federal Funds Effective Rate",
+		"EURIBOR6M":   "6-Month EURIBOR Rate",
 		"USD6MTD156N": "6-Month USD LIBOR",
-		"SOFR":       "Secured Overnight Financing Rate",
+		"SOFR":        "Secured Overnight Financing Rate",
 	}
 	if name, ok := names[seriesID]; ok {
 		return name
@@ -779,8 +779,8 @@ func generateMarketFileFromRates(rates []FREDRate, asofDate string) (string, err
 	today := asofDate
 
 	// Build rate maps for OIS and Swap
-	oisMap := make(map[string]float64)   // For EUR1D
-	swapMap := make(map[string]float64)  // For EUR6M
+	oisMap := make(map[string]float64)  // For EUR1D
+	swapMap := make(map[string]float64) // For EUR6M
 
 	for _, rate := range rates {
 		mapping := getORETermMapping(rate.SeriesID)
@@ -859,8 +859,8 @@ func getTermFromSeriesID(seriesID string) string {
 }
 
 type ORETerm struct {
-	Code string
-	OISCode string
+	Code     string
+	OISCode  string
 	SwapCode string
 }
 

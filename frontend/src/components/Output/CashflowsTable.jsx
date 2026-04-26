@@ -51,12 +51,14 @@ function CashflowsTable({ flows }) {
   }, {});
 
   return (
-    <div className="cashflows-table">
-      <h2>Cashflows</h2>
-      <div className="table-controls">
-        <div className="filter-buttons">
+    <div className="mb-8">
+      <h2 className="m-0 mb-4 text-2xl text-text-primary">Cashflows</h2>
+      <div className="mb-4">
+        <div className="flex gap-2 flex-wrap">
           <button
-            className={filter === 'all' ? 'active' : ''}
+            className={`py-2 px-4 border border-border-color bg-card-bg rounded-lg cursor-pointer text-sm transition-all duration-200 ${
+              filter === 'all' ? 'bg-primary-color text-white border-primary-color' : 'hover:bg-bg-color'
+            }`}
             onClick={() => setFilter('all')}
           >
             All ({flows.length})
@@ -64,7 +66,9 @@ function CashflowsTable({ flows }) {
           {Object.entries(legCounts).map(([leg, count]) => (
             <button
               key={leg}
-              className={filter === leg.toLowerCase() ? 'active' : ''}
+              className={`py-2 px-4 border border-border-color bg-card-bg rounded-lg cursor-pointer text-sm transition-all duration-200 ${
+                filter === leg.toLowerCase() ? 'bg-primary-color text-white border-primary-color' : 'hover:bg-bg-color'
+              }`}
               onClick={() => setFilter(leg.toLowerCase())}
             >
               {leg} ({count})
@@ -72,35 +76,39 @@ function CashflowsTable({ flows }) {
           ))}
         </div>
       </div>
-      <div className="table-container">
-        <table>
-          <thead>
+      <div className="bg-card-bg rounded-xl shadow-md overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead className="bg-bg-color border-b-2 border-border-color">
             <tr>
-              <th onClick={() => handleSort('date')} className="sortable">
+              <th onClick={() => handleSort('date')} className="py-4 px-4 text-left font-semibold text-text-secondary text-sm cursor-pointer select-none hover:bg-[#e2e8f0]">
                 Date {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
-              <th onClick={() => handleSort('leg')} className="sortable">
+              <th onClick={() => handleSort('leg')} className="py-4 px-4 text-left font-semibold text-text-secondary text-sm cursor-pointer select-none hover:bg-[#e2e8f0]">
                 Leg {sortBy === 'leg' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
-              <th onClick={() => handleSort('amount')} className="sortable">
+              <th onClick={() => handleSort('amount')} className="py-4 px-4 text-left font-semibold text-text-secondary text-sm cursor-pointer select-none hover:bg-[#e2e8f0]">
                 Amount {sortBy === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
-              <th>Currency</th>
+              <th className="py-4 px-4 text-left font-semibold text-text-secondary text-sm">Currency</th>
             </tr>
           </thead>
           <tbody>
             {filteredAndSortedFlows.map((flow, index) => (
-              <tr key={index}>
-                <td>{flow.date}</td>
-                <td>
-                  <span className={`leg-badge ${flow.leg.toLowerCase()}`}>
+              <tr key={index} className="border-b border-border-color hover:bg-bg-color">
+                <td className="py-[0.875rem] px-4 text-sm text-text-primary">{flow.date}</td>
+                <td className="py-[0.875rem] px-4 text-sm">
+                  <span className={`inline-block py-1 px-3 rounded text-xs font-semibold uppercase ${
+                    flow.leg.toLowerCase() === 'fixed' || flow.leg.toLowerCase() === 'fixedreceiver'
+                      ? 'bg-[#dbeafe] text-[#1e40af]'
+                      : 'bg-[#fef3c7] text-[#92400e]'
+                  }`}>
                     {flow.leg}
                   </span>
                 </td>
-                <td className={flow.amount >= 0 ? 'positive' : 'negative'}>
+                <td className={`py-[0.875rem] px-4 text-sm font-medium ${flow.amount >= 0 ? 'text-success-color' : 'text-error-color'}`}>
                   {formatNumber(flow.amount)}
                 </td>
-                <td>{flow.currency}</td>
+                <td className="py-[0.875rem] px-4 text-sm text-text-primary">{flow.currency}</td>
               </tr>
             ))}
           </tbody>
