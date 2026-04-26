@@ -5,7 +5,6 @@ import OREForm from './OREForm'
 import IRSwapForm from './IRSwapForm'
 import ConventionsForm from './ConventionsForm'
 import Message from '../../ui/Message'
-import EditorActions from '../EditorActions'
 import {
   parseOREXML,
   generateOREXML,
@@ -15,7 +14,15 @@ import {
   generateConventionsXML,
 } from '../../../utils/xmlParser'
 
-function FormEditor({ filename, onSave, showHeader = true }) {
+function FormEditor({
+  filename,
+  onSave,
+  showHeader = true,
+  onHasChangesChange,
+  saveTrigger = 0,
+  resetTrigger = 0,
+  onSaveComplete,
+}) {
   const [data, setData] = useState(null)
   const [originalXML, setOriginalXML] = useState('')
   const [loading, setLoading] = useState(true)
@@ -57,10 +64,40 @@ function FormEditor({ filename, onSave, showHeader = true }) {
     }
   }
 
+  useEffect(() => {
+    if (!data || !originalXML) return
+
+    const hasChanges =
+      JSON.stringify(data) !==
+      JSON.stringify(
+        filename === 'ore.xml'
+          ? parseOREXML(originalXML)
+          : filename === 'irswap.xml'
+            ? parseIRSwapXML(originalXML)
+            : parseConventionsXML(originalXML)
+      )
+
+    if (onHasChangesChange) {
+      onHasChangesChange(hasChanges)
+    }
+  }, [data, originalXML, filename, onHasChangesChange])
+
+  useEffect(() => {
+    if (saveTrigger > 0) {
+      handleSave()
+    }
+  }, [saveTrigger])
+
+  useEffect(() => {
+    if (resetTrigger > 0) {
+      loadFile()
+      setMessage(null)
+    }
+  }, [resetTrigger])
+
   const handleSave = async () => {
     setSaving(true)
     try {
-      // Generate XML based on filename
       let xmlContent
       switch (filename) {
         case 'ore.xml':
@@ -81,6 +118,7 @@ function FormEditor({ filename, onSave, showHeader = true }) {
       setMessage({ type: 'success', text: 'File saved successfully' })
       setTimeout(() => setMessage(null), 2000)
       if (onSave) onSave()
+      if (onSaveComplete) onSaveComplete()
     } catch (error) {
       setMessage({ type: 'error', text: `Failed to save file: ${error.message}` })
     } finally {
@@ -88,24 +126,9 @@ function FormEditor({ filename, onSave, showHeader = true }) {
     }
   }
 
-  const handleReset = () => {
-    loadFile()
-    setMessage(null)
-  }
-
   if (loading) {
     return <div className="p-8 text-center text-gray-600">Loading file...</div>
   }
-
-  const hasChanges =
-    JSON.stringify(data) !==
-    JSON.stringify(
-      filename === 'ore.xml'
-        ? parseOREXML(originalXML)
-        : filename === 'irswap.xml'
-          ? parseIRSwapXML(originalXML)
-          : parseConventionsXML(originalXML)
-    )
 
   const renderForm = () => {
     switch (filename) {
@@ -123,14 +146,6 @@ function FormEditor({ filename, onSave, showHeader = true }) {
   return (
     <div className="flex h-full flex-col">
       <Message message={message} />
-      {!showHeader && (
-        <EditorActions
-          hasChanges={hasChanges}
-          saving={saving}
-          onSave={handleSave}
-          onReset={handleReset}
-        />
-      )}
       <div className={showHeader ? '' : 'min-h-0 flex-1 overflow-auto'}>{renderForm()}</div>
     </div>
   )
@@ -140,6 +155,10 @@ FormEditor.propTypes = {
   filename: PropTypes.string.isRequired,
   onSave: PropTypes.func,
   showHeader: PropTypes.bool,
+  onHasChangesChange: PropTypes.func,
+  saveTrigger: PropTypes.number,
+  resetTrigger: PropTypes.number,
+  onSaveComplete: PropTypes.func,
 }
 
 export default FormEditor

@@ -3,9 +3,17 @@ import PropTypes from 'prop-types'
 import { api } from '../../services/api'
 import CodeEditor from './CodeEditor'
 import Message from '../ui/Message'
-import EditorActions from './EditorActions'
 
-function FileEditor({ filename, onSave, showHeader = true, prismTheme }) {
+function FileEditor({
+  filename,
+  onSave,
+  showHeader = true,
+  prismTheme,
+  onHasChangesChange,
+  saveTrigger = 0,
+  resetTrigger = 0,
+  onSaveComplete,
+}) {
   const [content, setContent] = useState('')
   const [originalContent, setOriginalContent] = useState('')
   const [loading, setLoading] = useState(true)
@@ -30,6 +38,26 @@ function FileEditor({ filename, onSave, showHeader = true, prismTheme }) {
     }
   }
 
+  useEffect(() => {
+    const hasChanges = content !== originalContent
+    if (onHasChangesChange) {
+      onHasChangesChange(hasChanges)
+    }
+  }, [content, originalContent, onHasChangesChange])
+
+  useEffect(() => {
+    if (saveTrigger > 0) {
+      handleSave()
+    }
+  }, [saveTrigger])
+
+  useEffect(() => {
+    if (resetTrigger > 0) {
+      setContent(originalContent)
+      setMessage(null)
+    }
+  }, [resetTrigger, originalContent])
+
   const handleSave = async () => {
     setSaving(true)
     try {
@@ -38,6 +66,7 @@ function FileEditor({ filename, onSave, showHeader = true, prismTheme }) {
       setMessage({ type: 'success', text: 'File saved successfully' })
       setTimeout(() => setMessage(null), 2000)
       if (onSave) onSave()
+      if (onSaveComplete) onSaveComplete()
     } catch (error) {
       setMessage({ type: 'error', text: `Failed to save file: ${error.message}` })
     } finally {
@@ -45,28 +74,13 @@ function FileEditor({ filename, onSave, showHeader = true, prismTheme }) {
     }
   }
 
-  const handleReset = () => {
-    setContent(originalContent)
-    setMessage(null)
-  }
-
   if (loading) {
     return <div className="p-8 text-center text-gray-600">Loading file...</div>
   }
 
-  const hasChanges = content !== originalContent
-
   return (
     <div className="flex h-full flex-col">
       <Message message={message} />
-      {!showHeader && (
-        <EditorActions
-          hasChanges={hasChanges}
-          saving={saving}
-          onSave={handleSave}
-          onReset={handleReset}
-        />
-      )}
       <div className={showHeader ? '' : 'min-h-0 flex-1'}>
         <CodeEditor
           value={content}
@@ -84,6 +98,10 @@ FileEditor.propTypes = {
   onSave: PropTypes.func,
   showHeader: PropTypes.bool,
   prismTheme: PropTypes.string,
+  onHasChangesChange: PropTypes.func,
+  saveTrigger: PropTypes.number,
+  resetTrigger: PropTypes.number,
+  onSaveComplete: PropTypes.func,
 }
 
 export default FileEditor

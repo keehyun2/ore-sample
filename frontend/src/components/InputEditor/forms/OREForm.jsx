@@ -66,6 +66,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.setup.marketDataFile}
               onChange={(e) => handleChange('setup', 'marketDataFile', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="Fixing Data File">
@@ -73,6 +74,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.setup.fixingDataFile}
               onChange={(e) => handleChange('setup', 'fixingDataFile', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="Curve Config File">
@@ -80,6 +82,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.setup.curveConfigFile}
               onChange={(e) => handleChange('setup', 'curveConfigFile', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="Conventions File">
@@ -87,6 +90,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.setup.conventionsFile}
               onChange={(e) => handleChange('setup', 'conventionsFile', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="Market Config File">
@@ -94,6 +98,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.setup.marketConfigFile}
               onChange={(e) => handleChange('setup', 'marketConfigFile', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="Pricing Engines File">
@@ -101,6 +106,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.setup.pricingEnginesFile}
               onChange={(e) => handleChange('setup', 'pricingEnginesFile', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="Portfolio File">
@@ -108,6 +114,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.setup.portfolioFile}
               onChange={(e) => handleChange('setup', 'portfolioFile', e.target.value)}
+              disabled
             />
           </FormField>
         </div>
@@ -122,6 +129,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.setup.logFile}
               onChange={(e) => handleChange('setup', 'logFile', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="Log Mask">
@@ -129,12 +137,14 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.setup.logMask}
               onChange={(e) => handleChange('setup', 'logMask', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="Imply Today's Fixings">
             <FormSelect
               value={data.setup.implyTodaysFixings}
               onChange={(e) => handleChange('setup', 'implyTodaysFixings', e.target.value)}
+              disabled
             >
               <option value="Y">Yes</option>
               <option value="N">No</option>
@@ -152,6 +162,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.markets.lgmcalibration}
               onChange={(e) => handleChange('markets', 'lgmcalibration', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="FX Calibration">
@@ -159,6 +170,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.markets.fxcalibration}
               onChange={(e) => handleChange('markets', 'fxcalibration', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="EQ Calibration">
@@ -166,6 +178,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.markets.eqcalibration}
               onChange={(e) => handleChange('markets', 'eqcalibration', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="Pricing">
@@ -173,6 +186,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.markets.pricing}
               onChange={(e) => handleChange('markets', 'pricing', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="Simulation">
@@ -180,6 +194,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.markets.simulation}
               onChange={(e) => handleChange('markets', 'simulation', e.target.value)}
+              disabled
             />
           </FormField>
         </div>
@@ -195,6 +210,7 @@ function OREForm({ data, onChange }) {
             <FormSelect
               value={data.analytics.npv.active}
               onChange={(e) => handleAnalyticsChange('npv', 'active', e.target.value)}
+              disabled
             >
               <option value="Y">Yes</option>
               <option value="N">No</option>
@@ -212,6 +228,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.analytics.npv.outputFileName}
               onChange={(e) => handleAnalyticsChange('npv', 'outputFileName', e.target.value)}
+              disabled
             />
           </FormField>
         </div>
@@ -222,6 +239,7 @@ function OREForm({ data, onChange }) {
             <FormSelect
               value={data.analytics.cashflow.active}
               onChange={(e) => handleAnalyticsChange('cashflow', 'active', e.target.value)}
+              disabled
             >
               <option value="Y">Yes</option>
               <option value="N">No</option>
@@ -232,6 +250,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.analytics.cashflow.outputFileName}
               onChange={(e) => handleAnalyticsChange('cashflow', 'outputFileName', e.target.value)}
+              disabled
             />
           </FormField>
         </div>
@@ -242,6 +261,7 @@ function OREForm({ data, onChange }) {
             <FormSelect
               value={data.analytics.curves.active}
               onChange={(e) => handleAnalyticsChange('curves', 'active', e.target.value)}
+              disabled
             >
               <option value="Y">Yes</option>
               <option value="N">No</option>
@@ -252,6 +272,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.analytics.curves.configuration}
               onChange={(e) => handleAnalyticsChange('curves', 'configuration', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="Grid">
@@ -259,6 +280,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.analytics.curves.grid}
               onChange={(e) => handleAnalyticsChange('curves', 'grid', e.target.value)}
+              disabled
             />
           </FormField>
           <FormField label="Output File">
@@ -266,6 +288,7 @@ function OREForm({ data, onChange }) {
               type="text"
               value={data.analytics.curves.outputFileName}
               onChange={(e) => handleAnalyticsChange('curves', 'outputFileName', e.target.value)}
+              disabled
             />
           </FormField>
         </div>

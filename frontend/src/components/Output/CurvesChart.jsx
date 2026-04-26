@@ -11,7 +11,14 @@ import {
 import PropTypes from 'prop-types'
 
 function CurvesChart({ curves }) {
-  if (!curves || curves.length === 0) return null
+  if (!curves || curves.length === 0) {
+    return (
+      <div className="mb-8 rounded-xl bg-card-bg p-6 shadow-md">
+        <h2 className="m-0 mb-4 text-2xl text-text-primary">Yield Curves</h2>
+        <p className="text-text-secondary">No curve data available.</p>
+      </div>
+    )
+  }
 
   const formatPercent = (value) => {
     return `${(value * 100).toFixed(4)}%`
@@ -71,7 +78,7 @@ function CurvesChart({ curves }) {
 }
 
 CurvesChart.propTypes = {
-  curves: PropTypes.arrayOf(PropTypes.object).isRequired,
+  curves: PropTypes.arrayOf(PropTypes.object),
 }
 
 export default CurvesChart

@@ -41,6 +41,13 @@ export const api = {
     return response.data
   },
 
+  switchExample: async (example) => {
+    const response = await axios.post(`${API_BASE}/example/switch`, {
+      example,
+    })
+    return response.data
+  },
+
   getFREDRates: async (seriesIds) => {
     if (!seriesIds || seriesIds.length === 0) {
       const response = await axios.get(`${API_BASE}/fred/rates`)

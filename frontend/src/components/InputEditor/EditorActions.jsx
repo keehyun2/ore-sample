@@ -11,8 +11,8 @@ function EditorActions({ hasChanges, saving, onSave, onReset, labels = {} }) {
   const resetLabel = labels.reset || BUTTON_LABELS.reset
 
   return (
-    <div className="mb-3 flex gap-2">
-      <Button onClick={onSave} disabled={!hasChanges || saving} variant="primary">
+    <div className="flex gap-2">
+      <Button onClick={onSave} disabled={!hasChanges || saving} variant="secondary">
         {saveLabel}
       </Button>
       <Button onClick={onReset} disabled={!hasChanges} variant="secondary">

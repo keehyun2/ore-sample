@@ -17,13 +17,14 @@ import (
 )
 
 var (
-	orePath    string
-	exampleDir string
-	inputDir   string
-	outputDir  string
-	workDir    string
-	serverPort string
-	fredApiKey string
+	orePath       string
+	inputDir      string
+	outputDir     string
+	workDir       string
+	serverPort    string
+	fredApiKey    string
+	currentExample string
+	exampleDirs   map[string]string
 )
 
 var lastRunResult *RunResult
@@ -32,12 +33,26 @@ func init() {
 	loadEnvFile()
 
 	orePath = getEnv("ORE_PATH", "/home/keehyun/dev/Engine/build/App/ore")
-	exampleDir = getEnv("EXAMPLE_DIR", "/home/keehyun/dev/Engine/Examples/Academy/TA002_IR_Swap")
 	inputDir = "Input"
 	outputDir = "Output"
-	workDir = getEnv("WORK_DIR", "./working")
+	workDirRaw := getEnv("WORK_DIR", "./working")
+	// Convert to absolute path
+	if absPath, err := filepath.Abs(workDirRaw); err == nil {
+		workDir = absPath
+	} else {
+		workDir = workDirRaw
+	}
 	serverPort = getEnv("PORT", "8080")
 	fredApiKey = getEnv("FRED_API_KEY", "")
+
+	// Define example directories
+	exampleDirs = map[string]string{
+		"IRSwap":        "/home/keehyun/dev/Engine/Examples/Academy/TA002_IR_Swap",
+		"OIS-consistency": "/home/keehyun/dev/Engine/Examples/CurveBuilding",
+	}
+
+	// Set current example (default to IRSwap)
+	currentExample = "IRSwap"
 }
 
 func loadEnvFile() {
@@ -114,9 +129,18 @@ type FileContent struct {
 	Content  string `json:"content"`
 }
 
+// FileReference holds information about a file referenced in ore.xml
+type FileReference struct {
+	ParamName string // e.g., "marketDataFile", "portfolioFile"
+	FilePath  string // e.g., "../../Input/market_20160205.txt"
+}
+
 func main() {
-	if err := initWorkingDir(); err != nil {
-		log.Fatalf("Failed to initialize working directory: %v", err)
+	// Initialize all example working directories on startup
+	for exampleName := range exampleDirs {
+		if err := initWorkingDirForExample(exampleName); err != nil {
+			log.Fatalf("Failed to initialize working directory for example '%s': %v", exampleName, err)
+		}
 	}
 
 	mux := http.NewServeMux()
@@ -127,6 +151,7 @@ func main() {
 	mux.HandleFunc("/api/run", handleRun)
 	mux.HandleFunc("/api/results", handleGetResults)
 	mux.HandleFunc("/api/config", handleGetConfig)
+	mux.HandleFunc("/api/example/switch", handleSwitchExample)
 	mux.HandleFunc("/api/fred/rates", handleGetFREDRates)
 	mux.HandleFunc("/api/fred/update", handleUpdateMarketFromFRED)
 
@@ -135,7 +160,7 @@ func main() {
 	addr := ":" + serverPort
 	fmt.Printf("Server starting on %s\n", addr)
 	fmt.Printf("ORE Path: %s\n", orePath)
-	fmt.Printf("Example Dir: %s\n", exampleDir)
+	fmt.Printf("Current Example: %s (%s)\n", currentExample, getCurrentExampleDir())
 	fmt.Printf("Work Dir: %s\n", workDir)
 	log.Fatal(http.ListenAndServe(addr, handler))
 }
@@ -146,20 +171,51 @@ func handleGetConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	config := map[string]string{
-		"orePath":    orePath,
-		"exampleDir": exampleDir,
-		"workDir":    workDir,
+	config := map[string]interface{}{
+		"orePath":        orePath,
+		"currentExample": currentExample,
+		"workDir":        workDir,
+		"availableExamples": getAvailableExamples(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(config)
 }
 
-func initWorkingDir() error {
-	workInputDir := filepath.Join(workDir, inputDir)
+func getAvailableExamples() []string {
+	examples := make([]string, 0, len(exampleDirs))
+	for name := range exampleDirs {
+		examples = append(examples, name)
+	}
+	return examples
+}
 
-	if err := os.RemoveAll(workDir); err != nil {
+func getCurrentExampleDir() string {
+	if dir, ok := exampleDirs[currentExample]; ok {
+		return dir
+	}
+	return exampleDirs["IRSwap"]
+}
+
+func getExampleWorkDir() string {
+	return filepath.Join(workDir, currentExample)
+}
+
+func initWorkingDir() error {
+	return initWorkingDirForExample(currentExample)
+}
+
+func initWorkingDirForExample(exampleName string) error {
+	exampleDir, ok := exampleDirs[exampleName]
+	if !ok {
+		return fmt.Errorf("unknown example: %s", exampleName)
+	}
+
+	// Use example-specific working directory
+	exampleWorkDir := filepath.Join(workDir, exampleName)
+	workInputDir := filepath.Join(exampleWorkDir, inputDir)
+
+	if err := os.RemoveAll(exampleWorkDir); err != nil {
 		return fmt.Errorf("failed to remove existing working directory: %w", err)
 	}
 
@@ -167,13 +223,144 @@ func initWorkingDir() error {
 		return fmt.Errorf("failed to create working directory: %w", err)
 	}
 
-	originalInputDir := filepath.Join(exampleDir, inputDir)
-	if err := copyDir(originalInputDir, workInputDir); err != nil {
+	// Parse ore*.xml to get required files and the ore.xml filename
+	refs, oreFileName, err := getRequiredFilesFromXML(exampleDir, exampleName)
+	if err != nil {
+		return fmt.Errorf("failed to parse required files: %w", err)
+	}
+
+	fmt.Printf("Found %d file references in %s\n", len(refs), oreFileName)
+
+	// Copy the main ore*.xml file as "ore.xml" for ORE to find it
+	oreSrcPath := filepath.Join(exampleDir, "Input", oreFileName)
+	oreDstPath := filepath.Join(workInputDir, "ore.xml")
+	if err := copyAndCleanOreXml(oreSrcPath, oreDstPath); err != nil {
+		return fmt.Errorf("failed to copy ore.xml: %w", err)
+	}
+	fmt.Printf("Copied: %s -> ore.xml (cleaned paths)\n", oreFileName)
+
+	// Copy only referenced files
+	if err := copyReferencedFiles(exampleDir, workInputDir, refs); err != nil {
 		return fmt.Errorf("failed to copy input files: %w", err)
 	}
 
-	fmt.Printf("Working directory initialized at: %s\n", workDir)
+	fmt.Printf("Working directory initialized for example '%s' at: %s\n", exampleName, exampleWorkDir)
 	return nil
+}
+
+// getRequiredFilesFromXML parses the ore*.xml file and returns file references
+// Also returns the name of the ore.xml file that should be used
+func getRequiredFilesFromXML(exampleDir, exampleName string) ([]FileReference, string, error) {
+	// Find the ore*.xml file based on example name
+	var oreFileName string
+	switch exampleName {
+	case "IRSwap":
+		oreFileName = "ore.xml"
+	case "OIS-consistency":
+		oreFileName = "ore_consistency_ois.xml"
+	default:
+		return nil, "", fmt.Errorf("unknown example: %s", exampleName)
+	}
+
+	oreXmlPath := filepath.Join(exampleDir, "Input", oreFileName)
+	content, err := os.ReadFile(oreXmlPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read ore.xml: %w", err)
+	}
+
+	// Parse XML to extract file references from Parameter tags
+	// Pattern: <Parameter name="*File">path</Parameter>
+	// Exclude logFile as it's an output file, not an input file
+	var refs []FileReference
+	re := regexp.MustCompile(`<Parameter name="([^"]*File)">(.*?)</Parameter>`)
+	matches := re.FindAllStringSubmatch(string(content), -1)
+
+	for _, match := range matches {
+		if len(match) >= 3 {
+			paramName := match[1]
+			// Skip logFile as it's an output file, not input
+			if paramName == "logFile" {
+				continue
+			}
+			refs = append(refs, FileReference{
+				ParamName: paramName,
+				FilePath:  strings.TrimSpace(match[2]),
+			})
+		}
+	}
+
+	return refs, oreFileName, nil
+}
+
+// copyReferencedFiles copies only the files referenced in the ore.xml
+func copyReferencedFiles(exampleDir, workInputDir string, refs []FileReference) error {
+	for _, ref := range refs {
+		var srcPath string
+		var dstName string
+
+		if strings.HasPrefix(ref.FilePath, "../../") {
+			// File is in parent directory - resolve from exampleDir parent
+			// exampleDir = /home/keehyun/dev/Engine/Examples/CurveBuilding
+			// ../../Input/ means go up from CurveBuilding to Examples, then into Input
+			baseDir := filepath.Dir(exampleDir) // Go up one level (CurveBuilding -> Examples)
+			relativePath := strings.TrimPrefix(strings.TrimPrefix(ref.FilePath, "../"), "../")
+			srcPath = filepath.Join(baseDir, relativePath)
+			dstName = filepath.Base(ref.FilePath) // Use just filename for destination
+		} else {
+			// File is in the same Input directory
+			srcPath = filepath.Join(exampleDir, "Input", ref.FilePath)
+			dstName = ref.FilePath
+		}
+
+		dstPath := filepath.Join(workInputDir, dstName)
+
+		// Check if source file exists before copying
+		if _, err := os.Stat(srcPath); err != nil {
+			fmt.Printf("Warning: Source file not found, skipping: %s (error: %v)\n", srcPath, err)
+			continue
+		}
+
+		// Copy the file
+		if err := copyFile(srcPath, dstPath); err != nil {
+			fmt.Printf("Error copying file: %s -> %s (error: %v)\n", srcPath, dstPath, err)
+			return fmt.Errorf("failed to copy %s: %w", ref.FilePath, err)
+		}
+
+		fmt.Printf("Copied: %s -> %s\n", ref.FilePath, dstName)
+	}
+
+	return nil
+}
+
+// copyFile copies a single file from src to dst
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
+}
+
+// copyAndCleanOreXml copies ore.xml and removes ../../Input/ paths
+func copyAndCleanOreXml(src, dst string) error {
+	content, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+
+	// Remove ../../Input/ paths and replace with just the filename
+	cleaned := strings.ReplaceAll(string(content), "../../Input/", "")
+
+	return os.WriteFile(dst, []byte(cleaned), 0644)
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
@@ -197,19 +384,79 @@ func handleListInputFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	files := []string{
-		"ore.xml",
-		"irswap.xml",
-		"market.txt",
-		"fixings.txt",
-		"curveconfig.xml",
-		"todaysmarket.xml",
-		"pricingengine.xml",
-		"conventions.xml",
+	workInputDir := filepath.Join(getExampleWorkDir(), inputDir)
+
+	files, err := listFiles(workInputDir)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(files)
+}
+
+func listFiles(dir string) ([]string, error) {
+	var files []string
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			files = append(files, entry.Name())
+		}
+	}
+
+	return files, nil
+}
+
+func handleSwitchExample(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Example string `json:"example"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding switch request: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Switching example from '%s' to '%s'", currentExample, req.Example)
+
+	if _, ok := exampleDirs[req.Example]; !ok {
+		log.Printf("Unknown example requested: %s", req.Example)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": fmt.Sprintf("Unknown example: %s", req.Example),
+			"available": fmt.Sprintf("%v", getAvailableExamples()),
+		})
+		return
+	}
+
+	// Just change the current example - files are already copied during startup
+	currentExample = req.Example
+
+	// Clear previous results
+	lastRunResult = nil
+
+	log.Printf("Successfully switched to example '%s'", currentExample)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":           "ok",
+		"currentExample":   currentExample,
+		"message":          fmt.Sprintf("Switched to %s example", currentExample),
+	})
 }
 
 func handleInputFile(w http.ResponseWriter, r *http.Request) {
@@ -219,16 +466,18 @@ func handleInputFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filePath := filepath.Join(workDir, inputDir, filename)
+	filePath := filepath.Join(getExampleWorkDir(), inputDir, filename)
 
 	switch r.Method {
 	case http.MethodGet:
 		content, err := os.ReadFile(filePath)
 		if err != nil {
+			log.Printf("Error reading file '%s': %v (filePath: %s)", filename, err, filePath)
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
+		log.Printf("Serving file: %s", filename)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(FileContent{
 			Filename: filename,
@@ -238,15 +487,18 @@ func handleInputFile(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		var fc FileContent
 		if err := json.NewDecoder(r.Body).Decode(&fc); err != nil {
+			log.Printf("Error decoding request for '%s': %v", filename, err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		if err := os.WriteFile(filePath, []byte(fc.Content), 0644); err != nil {
+			log.Printf("Error writing file '%s': %v", filename, err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		log.Printf("Updated file: %s", filename)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 
@@ -261,13 +513,16 @@ func handleResetInputFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := initWorkingDir(); err != nil {
+	log.Printf("Resetting input files for example '%s'", currentExample)
+	if err := initWorkingDirForExample(currentExample); err != nil {
+		log.Printf("Error resetting input files: %v", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 
+	log.Printf("Input files reset successfully for example '%s'", currentExample)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok", "message": "Input files reset to original"})
 }
@@ -301,64 +556,69 @@ func handleGetResults(w http.ResponseWriter, r *http.Request) {
 }
 
 func runORE() *RunResult {
-	tempDir, err := os.MkdirTemp("", "ore-run-*")
-	if err != nil {
+	// Use working directory for the current example instead of temp
+	exampleWorkDir := getExampleWorkDir()
+	workInputDir := filepath.Join(exampleWorkDir, inputDir)
+	workOutputDir := filepath.Join(exampleWorkDir, outputDir)
+
+	// Clean and create output directory
+	if err := os.RemoveAll(workOutputDir); err != nil {
 		return &RunResult{
 			Success: false,
-			Error:   fmt.Sprintf("Failed to create temp dir: %v", err),
+			Error:   fmt.Sprintf("Failed to clean output dir: %v", err),
 		}
 	}
-	defer os.RemoveAll(tempDir)
-
-	tempInputDir := filepath.Join(tempDir, inputDir)
-	tempOutputDir := filepath.Join(tempDir, outputDir)
-
-	if err := os.MkdirAll(tempInputDir, 0755); err != nil {
+	if err := os.MkdirAll(workOutputDir, 0755); err != nil {
 		return &RunResult{
 			Success: false,
-			Error:   fmt.Sprintf("Failed to create temp input dir: %v", err),
-		}
-	}
-
-	workInputDir := filepath.Join(workDir, inputDir)
-	if err := copyDir(workInputDir, tempInputDir); err != nil {
-		return &RunResult{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to copy input files: %v", err),
+			Error:   fmt.Sprintf("Failed to create output dir: %v", err),
 		}
 	}
 
-	oreXmlPath := filepath.Join(tempInputDir, "ore.xml")
+	oreXmlPath := filepath.Join(workInputDir, "ore.xml")
 	cmd := exec.Command(orePath, oreXmlPath)
-	cmd.Dir = tempDir
+	cmd.Dir = exampleWorkDir
 
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
 	start := time.Now()
-	err = cmd.Run()
+	runErr := cmd.Run()
 	duration := time.Since(start)
 
 	// Try to read ORE log.txt if it exists
 	var oreLogs string
-	logPath := filepath.Join(tempOutputDir, "log.txt")
-	if logContent, err := os.ReadFile(logPath); err == nil {
+	logPath := filepath.Join(workOutputDir, "log.txt")
+	if logContent, readErr := os.ReadFile(logPath); readErr == nil {
 		oreLogs = string(logContent)
 	} else {
 		oreLogs = fmt.Sprintf("Execution time: %v\n\nSTDOUT:\n%s\n\nSTDERR:\n%s",
 			duration, stdout.String(), stderr.String())
 	}
 
-	if err != nil {
+	// Check if ORE executed successfully (look for "ORE done" in output)
+	oreOutput := stdout.String()
+	if !strings.Contains(oreOutput, "ORE done") && runErr != nil {
 		return &RunResult{
 			Success: false,
 			Logs:    oreLogs,
-			Error:   fmt.Sprintf("ORE execution failed: %v", err),
+			Error:   fmt.Sprintf("ORE execution failed: %v", runErr),
 		}
 	}
 
-	results, err := parseResults(tempOutputDir)
+	// Check if output files exist
+	npvPath := filepath.Join(workOutputDir, "npv.csv")
+	if _, statErr := os.Stat(npvPath); os.IsNotExist(statErr) {
+		// ORE ran successfully but no NPV output (some examples may not produce NPV)
+		return &RunResult{
+			Success: true,
+			Logs:    oreLogs,
+			Results: nil, // No results available
+		}
+	}
+
+	results, err := parseResults(workOutputDir)
 	if err != nil {
 		return &RunResult{
 			Success: false,
