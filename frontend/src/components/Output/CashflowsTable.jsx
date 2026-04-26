@@ -1,17 +1,11 @@
 import { useState, useMemo } from 'react'
 import PropTypes from 'prop-types'
+import { formatNumber } from '../../utils/format'
 
 function CashflowsTable({ flows }) {
   const [filter, setFilter] = useState('all')
   const [sortBy, setSortBy] = useState('date')
   const [sortOrder, setSortOrder] = useState('asc')
-
-  const formatNumber = (num) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(num)
-  }
 
   const filteredAndSortedFlows = useMemo(() => {
     let result = [...flows]

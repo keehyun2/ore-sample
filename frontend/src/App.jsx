@@ -8,11 +8,10 @@ import NPVDisplay from './components/Output/NPVDisplay'
 import CashflowsTable from './components/Output/CashflowsTable'
 import CurvesChart from './components/Output/CurvesChart'
 import LogViewer from './components/Output/LogViewer'
+import Button from './components/ui/Button'
 import { api } from './services/api'
 import { THEME_OPTIONS } from './components/InputEditor/CodeEditor'
-
-// Files that support form-based editing
-const FORM_EDITABLE_FILES = ['ore.xml', 'irswap.xml', 'conventions.xml']
+import { FORM_EDITABLE_FILES, BUTTON_LABELS } from './constants/ui'
 
 function App() {
   const [files, setFiles] = useState([])
@@ -115,28 +114,17 @@ function App() {
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={handleResetAll}
-                    disabled={resetting}
-                    className="rounded bg-yellow-600 px-3 py-1 text-xs text-white hover:bg-yellow-700 disabled:bg-gray-400"
-                  >
-                    {resetting ? 'Resetting...' : 'Reset All'}
-                  </button>
+                  <Button variant="warning" onClick={handleResetAll} disabled={resetting}>
+                    {resetting ? BUTTON_LABELS.resetting : BUTTON_LABELS.resetAll}
+                  </Button>
                   {FORM_EDITABLE_FILES.includes(selectedFile) && (
-                    <button
-                      className="rounded bg-gray-200 px-3 py-1 text-xs text-gray-700 hover:bg-gray-300"
-                      onClick={() => setShowXMLEditor(!showXMLEditor)}
-                    >
+                    <Button variant="secondary" onClick={() => setShowXMLEditor(!showXMLEditor)}>
                       {showXMLEditor ? 'View Form Editor' : 'View XML Editor'}
-                    </button>
+                    </Button>
                   )}
-                  <button
-                    onClick={handleRun}
-                    disabled={running}
-                    className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700 disabled:bg-gray-400"
-                  >
-                    {running ? 'Running...' : 'Run Valuation'}
-                  </button>
+                  <Button variant="success" onClick={handleRun} disabled={running}>
+                    {running ? BUTTON_LABELS.running : BUTTON_LABELS.runValuation}
+                  </Button>
                 </div>
               </div>
 
@@ -196,12 +184,9 @@ function App() {
                   <div>
                     <div className="mb-4 flex items-center justify-between">
                       <h2 className="m-0 text-xl font-semibold">Valuation Results</h2>
-                      <button
-                        onClick={() => setShowLog(!showLog)}
-                        className="rounded bg-gray-200 px-3 py-1 text-xs hover:bg-gray-300"
-                      >
+                      <Button variant="secondary" onClick={() => setShowLog(!showLog)}>
                         {showLog ? 'Hide Log' : 'Show Log'}
-                      </button>
+                      </Button>
                     </div>
                     <NPVDisplay data={results.results.npv} />
                     <CashflowsTable flows={results.results.flows} />

@@ -1,9 +1,5 @@
 import PropTypes from 'prop-types'
-
-const formInputClass =
-  'px-2 py-1 text-xs border rounded focus:outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
-const formLabelClass = 'text-xs text-gray-600 mb-1'
-const formFieldClass = 'flex flex-col'
+import { FormField, FormInput, FormSelect } from '../../ui/form/FormField'
 
 function ConventionsForm({ data, onChange }) {
   const handleDepositChange = (index, field, value) => {
@@ -41,26 +37,6 @@ function ConventionsForm({ data, onChange }) {
       swaps: newSwaps,
     })
   }
-
-  // eslint-disable-next-line react/prop-types
-  const FormField = ({ label, children }) => (
-    <div className={formFieldClass}>
-      <label className={formLabelClass}>{label}</label>
-      {children}
-    </div>
-  )
-
-  // eslint-disable-next-line react/prop-types
-  const FormSelect = ({ value, onChange, children }) => (
-    <select value={value} onChange={onChange} className={formInputClass}>
-      {children}
-    </select>
-  )
-
-  // eslint-disable-next-line react/prop-types
-  const FormInput = ({ type, value, onChange, step }) => (
-    <input type={type} step={step} value={value} onChange={onChange} className={formInputClass} />
-  )
 
   return (
     <div className="rounded bg-white p-3">

@@ -1,14 +1,8 @@
 import PropTypes from 'prop-types'
+import { formatNumber } from '../../utils/format'
 
 function NPVDisplay({ data }) {
   if (!data) return null
-
-  const formatNumber = (num) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(num)
-  }
 
   return (
     <div className="mb-8">

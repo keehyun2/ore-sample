@@ -4,6 +4,8 @@ import { api } from '../../../services/api'
 import OREForm from './OREForm'
 import IRSwapForm from './IRSwapForm'
 import ConventionsForm from './ConventionsForm'
+import Message from '../../ui/Message'
+import EditorActions from '../EditorActions'
 import {
   parseOREXML,
   generateOREXML,
@@ -120,32 +122,14 @@ function FormEditor({ filename, onSave, showHeader = true }) {
 
   return (
     <div className="flex h-full flex-col">
-      {message && (
-        <div
-          className={`mb-3 rounded p-3 text-sm ${
-            message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
+      <Message message={message} />
       {!showHeader && (
-        <div className="mb-3 flex gap-2">
-          <button
-            onClick={handleSave}
-            disabled={!hasChanges || saving}
-            className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700 disabled:bg-gray-400"
-          >
-            {saving ? 'Saving...' : hasChanges ? 'Save' : 'Saved'}
-          </button>
-          <button
-            onClick={handleReset}
-            disabled={!hasChanges}
-            className="rounded border bg-gray-100 px-3 py-1 text-xs hover:bg-gray-200 disabled:opacity-50"
-          >
-            Reset
-          </button>
-        </div>
+        <EditorActions
+          hasChanges={hasChanges}
+          saving={saving}
+          onSave={handleSave}
+          onReset={handleReset}
+        />
       )}
       <div className={showHeader ? '' : 'min-h-0 flex-1 overflow-auto'}>{renderForm()}</div>
     </div>

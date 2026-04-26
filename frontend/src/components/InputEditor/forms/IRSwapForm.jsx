@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types'
+import { FormField, FormInput, FormSelect } from '../../ui/form/FormField'
 
 function IRSwapForm({ data, onChange }) {
   const handleChange = (field, value) => {
@@ -26,45 +27,6 @@ function IRSwapForm({ data, onChange }) {
         [field]: value,
       },
     })
-  }
-
-  const formInputClass =
-    'px-2 py-1 text-xs border rounded focus:outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
-  const formLabelClass = 'text-xs text-gray-600 mb-1'
-  const formFieldClass = 'flex flex-col'
-
-  // eslint-disable-next-line react/prop-types
-  function FormField({ label, children }) {
-    return (
-      <div className={formFieldClass}>
-        <label className={formLabelClass}>{label}</label>
-        {children}
-      </div>
-    )
-  }
-
-  // eslint-disable-next-line react/prop-types
-  function FormSelect({ value, onChange, children, disabled }) {
-    return (
-      <select value={value} onChange={onChange} disabled={disabled} className={formInputClass}>
-        {children}
-      </select>
-    )
-  }
-
-  // eslint-disable-next-line react/prop-types
-  function FormInput({ type, value, onChange, step, placeholder, disabled }) {
-    return (
-      <input
-        type={type}
-        step={step}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        className={formInputClass}
-      />
-    )
   }
 
   return (
